@@ -24,9 +24,11 @@ export default function Cabecalho() {
     <>
       {/* O cabeçalho é uma nuvem: branco difuso sobre o azul, sem contorno,
           rareando até encontrar o céu do fundo sem emenda. Ver .cabecalho-nuvem.
-          Só no celular — no desktop a navegação vive no MenuLateral. */}
-      <header ref={refCabecalho} className="cabecalho-nuvem lg:hidden">
-        <div className="mx-auto max-w-5xl px-4 py-4">
+          A faixa existe em todas as larguras — pedido do Pedro: o título mora
+          no cabeçalho da página, não só no menu. No desktop ela carrega apenas
+          a identidade; navegação e controle de fonte vivem no MenuLateral. */}
+      <header ref={refCabecalho} className="cabecalho-nuvem">
+        <div className="mx-auto max-w-5xl px-4 py-4 lg:max-w-[88rem] lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Simbolo />
@@ -35,10 +37,12 @@ export default function Cabecalho() {
                 <p className="text-sm text-tinta-suave">Movimento Cristão · Natal/RN</p>
               </div>
             </div>
-            <ControleFonte />
+            <div className="lg:hidden">
+              <ControleFonte />
+            </div>
           </div>
 
-          <nav aria-label="Navegação principal" className="mt-4">
+          <nav aria-label="Navegação principal" className="mt-4 lg:hidden">
             <ul className="flex flex-wrap gap-2">
               {ITENS.map(({ para, rotulo, fim }) => (
                 <li key={para}>

@@ -26,8 +26,9 @@ export default function App() {
 
       {/* Desktop: menu lateral fixo + coluna de conteúdo. Celular: só a coluna,
           com o menu no Cabecalho acima. A folha branca carrega o texto; o céu
-          vive em volta. */}
-      <div className="mx-auto w-full max-w-[88rem] lg:flex lg:items-start lg:gap-8 lg:px-8 lg:pt-8">
+          vive em volta. Sem items-start: o aside precisa esticar até a altura
+          da coluna de conteúdo, senão o sticky do menu não tem onde viajar. */}
+      <div className="mx-auto w-full max-w-[88rem] lg:flex lg:gap-8 lg:px-8 lg:pt-8">
         <MenuLateral />
 
         <div className="min-w-0 flex-1">

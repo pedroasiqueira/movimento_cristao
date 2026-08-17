@@ -1,28 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import ControleFonte from './ControleFonte'
-import { Simbolo } from './Cabecalho'
 import { ITENS } from '@/lib/navegacao'
 
 /**
  * Menu lateral do desktop — pedido do Pedro: na tela grande o menu vai para
  * o lado e o conteúdo ganha a largura. Fica fixo enquanto a página rola
  * (sticky), então trocar de seção no meio da leitura nunca exige voltar ao
- * topo. No celular este componente não existe: lá o menu segue em cima
+ * topo. O título do Movimento não mora aqui: vive na faixa do Cabecalho,
+ * acima. No celular este componente não existe: lá o menu segue em cima
  * (Cabecalho), com a barra compacta ao rolar.
  */
 export default function MenuLateral() {
   return (
     <aside className="hidden w-72 shrink-0 lg:block">
       <div className="sticky top-6 rounded-2xl border border-borda bg-papel p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Simbolo />
-          <div className="leading-tight">
-            <p className="font-semibold text-azul">Arca da Sagrada Aliança</p>
-            <p className="text-sm text-tinta-suave">Movimento Cristão · Natal/RN</p>
-          </div>
-        </div>
-
-        <nav aria-label="Navegação principal" className="mt-5">
+        <nav aria-label="Navegação principal">
           <ul className="space-y-1.5">
             {ITENS.map(({ para, rotulo, fim }) => (
               <li key={para}>

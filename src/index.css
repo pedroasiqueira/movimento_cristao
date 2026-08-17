@@ -152,11 +152,14 @@ body::before {
 /*
   O corpo da Mensagem preserva as quebras de linha do texto original (FR-4):
   o ritmo visual é conteúdo, não decoração.
+  O tamanho é em `em`, nunca `rem`: o ajuste local de leitura (FR-18) chega
+  como multiplicador em `em` num elemento pai — `rem` apontaria direto para o
+  <html> e descartaria o multiplicador (o A−/A+ da página deixaria de agir).
 */
 .texto-mensagem {
   font-family: var(--font-leitura);
   white-space: pre-wrap;
-  font-size: 1.06rem;
+  font-size: 1.06em;
   line-height: 1.75;
 }
 
