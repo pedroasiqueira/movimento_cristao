@@ -1,43 +1,44 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
-import Mensagem from '@/components/Mensagem'
+import { ArrowRight, BookOpen, CalendarDays, Music } from 'lucide-react'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
-import { destaqueDaHome, porExtenso, tagsEmUso } from '@/lib/mensagens'
+import { acervo, destaqueDaHome, porExtenso } from '@/lib/mensagens'
+import { proximosEncontros } from '@/lib/encontros'
 import { useTitulo } from '@/hooks/useTitulo'
+import sobre from '@/data/sobre.json'
 
 /**
- * A home abre com a Mensagem do Dia em destaque, texto integral, data visível —
- * FR-1. A mesma tela serve a Membro e a Visitante: a aposta do PRD é que a
- * melhor apresentação do Movimento é a Mensagem de hoje, e não uma página
- * falando sobre si.
+ * Início — a home como pequena landing, por decisão do Pedro (17/08/2026):
+ * a Mensagem do Dia abre a página com ~40% do texto e um botão claro para a
+ * página completa (FR-1, consequência revista), seguida do próximo Encontro,
+ * dos atalhos para Acervo e Músicas, e de uma apresentação curta do Movimento.
+ * Contida de propósito: SM-C3 lembra que cada elemento a mais custa para o
+ * público 60+.
  */
 export default function Home() {
   useTitulo(null)
   const { mensagem, situacao, diasAtras } = destaqueDaHome()
 
   if (!mensagem) {
-    return (
-      <p className="text-tinta-suave">Ainda não há mensagens publicadas.</p>
-    )
+    return <p className="text-tinta-suave">Ainda não há mensagens publicadas.</p>
   }
 
   return (
     <>
-      <Aviso situacao={situacao} data={mensagem.data} diasAtras={diasAtras} />
-      <Mensagem mensagem={mensagem} />
-      <Rodape mensagem={mensagem} />
+      {/* A leitura mora numa coluna de medida confortável; os atalhos usam a largura toda. */}
+      <div className="mx-auto max-w-3xl">
+        <Aviso situacao={situacao} data={mensagem.data} diasAtras={diasAtras} />
+        <PreviaDaMensagem mensagem={mensagem} />
+      </div>
+      <ProximoEncontro />
+      <Atalhos />
+      <SobreResumo />
     </>
   )
 }
 
 /*
   FR-2: quando não há Mensagem do dia corrente, a home nunca finge que a
-  anterior é de hoje. Até dois dias, o destaque segue normal — a data real já
-  está visível junto ao título. Acima disso, o enquadramento muda, para o site
-  não passar conteúdo antigo como se fosse do dia.
-
-  Domingo não é atraso: a Mensagem de domingo vem em áudio, e a de sábado
-  permanece em destaque.
+  anterior é de hoje. Domingo não é atraso: a Mensagem de domingo vem em áudio.
 */
 function Aviso({ situacao, data, diasAtras }) {
   if (situacao === 'hoje') return null
@@ -65,44 +66,117 @@ function Aviso({ situacao, data, diasAtras }) {
   )
 }
 
-function Rodape({ mensagem }) {
-  const total = tagsEmUso().reduce((s, t) => s + t.total, 0)
+/** Corta o corpo em ~40% das palavras, sempre em fim de linha. */
+function previa(corpo, fracao = 0.4) {
+  const linhas = corpo.split('\n')
+  const totalPalavras = corpo.split(/\s+/).filter(Boolean).length
+  const alvo = Math.max(60, Math.round(totalPalavras * fracao))
+  const saida = []
+  let contadas = 0
+  for (const linha of linhas) {
+    saida.push(linha)
+    contadas += linha.split(/\s+/).filter(Boolean).length
+    if (contadas >= alvo) break
+  }
+  return saida.join('\n')
+}
+
+function PreviaDaMensagem({ mensagem }) {
+  const { titulo, data, corpo, assinatura } = mensagem
 
   return (
-    <div className="mt-10 border-t border-borda pt-6">
-      {mensagem.tags?.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-tinta-suave">Assunto:</span>
-          {mensagem.tags.map((t) => (
-            <Link
-              key={t}
-              to={`/acervo?tag=${encodeURIComponent(t)}`}
-              className="flex min-h-12 items-center rounded-lg bg-azul-claro px-4 text-azul-escuro hover:bg-azul hover:text-white"
-            >
-              {t}
-            </Link>
-          ))}
-        </div>
-      )}
+    <article>
+      <header className="mb-5">
+        <h1 className="text-balance font-leitura text-2xl leading-tight font-bold text-tinta sm:text-3xl">
+          {titulo}
+        </h1>
+        <p className="mt-2 text-sm text-tinta-suave">
+          <time dateTime={data}>{porExtenso(data)}</time>
+        </p>
+        {assinatura && <p className="mt-1 text-sm text-tinta-suave">{assinatura}</p>}
+      </header>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {/* O convite vira um link — SM-2. A folha nativa do celular cai no WhatsApp. */}
-        <BotaoCompartilhar
-          titulo={mensagem.titulo}
-          caminho={`/mensagem/${mensagem.data}`}
-          rotulo="Compartilhar esta mensagem"
-        />
+      {/* ~40% do texto, esvanecendo — a leitura inteira mora na página própria (FR-3). */}
+      <div className="previa-fade texto-mensagem">{previa(corpo)}</div>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Link
-          to="/acervo"
-          className="flex min-h-12 items-center justify-center gap-2 rounded-lg border-2 border-azul px-5 font-medium text-azul hover:bg-azul hover:text-white"
+          to={`/mensagem/${data}`}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-lg bg-azul px-5 font-medium text-white hover:bg-azul-escuro"
         >
-          Ver todas as mensagens
+          Ler a mensagem completa
           <ArrowRight size={20} aria-hidden />
         </Link>
+        {/* O convite vira um link — SM-2. */}
+        <BotaoCompartilhar
+          titulo={titulo}
+          caminho={`/mensagem/${data}`}
+          rotulo="Compartilhar"
+        />
       </div>
-      <p className="mt-3 text-sm text-tinta-suave">
-        {total > 0 && 'O acervo reúne as mensagens publicadas, organizadas por data e por assunto.'}
-      </p>
+    </article>
+  )
+}
+
+function ProximoEncontro() {
+  const proximo = proximosEncontros(4).find((e) => !e.cancelado)
+  if (!proximo) return null
+
+  return (
+    <Link
+      to="/encontros"
+      className="mt-10 flex items-center gap-3 rounded-lg border border-borda bg-azul-claro/50 px-5 py-4 hover:border-azul hover:bg-azul-claro"
+    >
+      <CalendarDays size={26} aria-hidden className="shrink-0 text-azul" />
+      <span>
+        <span className="block text-sm text-tinta-suave">Próximo encontro</span>
+        <span className="block font-medium text-tinta">{porExtenso(proximo.data)}</span>
+      </span>
+      <ArrowRight size={20} aria-hidden className="ml-auto shrink-0 text-azul" />
+    </Link>
+  )
+}
+
+function Atalhos() {
+  return (
+    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <Link
+        to="/acervo"
+        className="rounded-lg border border-borda px-5 py-5 hover:border-azul hover:bg-azul-claro"
+      >
+        <BookOpen size={26} aria-hidden className="text-azul" />
+        <p className="mt-2 font-semibold text-tinta">Acervo de mensagens</p>
+        <p className="mt-1 text-sm text-tinta-suave">
+          {acervo.length} mensagens guardadas — encontre por data, palavra ou assunto.
+        </p>
+      </Link>
+
+      <Link
+        to="/musicas"
+        className="rounded-lg border border-borda px-5 py-5 hover:border-azul hover:bg-azul-claro"
+      >
+        <Music size={26} aria-hidden className="text-azul" />
+        <p className="mt-2 font-semibold text-tinta">Músicas</p>
+        <p className="mt-1 text-sm text-tinta-suave">
+          As letras das músicas cantadas nos encontros, para acompanhar e reler.
+        </p>
+      </Link>
+    </div>
+  )
+}
+
+function SobreResumo() {
+  return (
+    <div className="mt-10 border-t border-borda pt-8">
+      <h2 className="text-lg font-semibold text-azul-escuro">O Movimento</h2>
+      <p className="texto-mensagem mt-3">{sobre.paragrafos[0]}</p>
+      <Link
+        to="/sobre"
+        className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-lg border-2 border-azul px-5 font-medium text-azul hover:bg-azul hover:text-white"
+      >
+        Conhecer o Movimento
+        <ArrowRight size={20} aria-hidden />
+      </Link>
     </div>
   )
 }

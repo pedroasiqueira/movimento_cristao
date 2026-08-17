@@ -1,22 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import ControleFonte from './ControleFonte'
-
-/*
-  Menu raso: cinco itens, sem submenus — PRD §6.
-  Sem menu sanfona: para o público a que o site atende, esconder a navegação
-  atrás de um ícone custa mais do que ocupar espaço na tela.
-
-  Rótulo curto é o da barra compacta que aparece ao rolar — pedido do Pedro:
-  quem rolou está lendo, então a navegação volta fininha, só as seções.
-*/
-const ITENS = [
-  { para: '/', rotulo: 'Mensagem do dia', curto: 'Início', fim: true },
-  { para: '/acervo', rotulo: 'Acervo', curto: 'Acervo' },
-  { para: '/musicas', rotulo: 'Músicas', curto: 'Músicas' },
-  { para: '/encontros', rotulo: 'Encontros', curto: 'Encontros' },
-  { para: '/sobre', rotulo: 'Sobre', curto: 'Sobre' },
-]
+import { ITENS } from '@/lib/navegacao'
 
 export default function Cabecalho() {
   const refCabecalho = useRef(null)
@@ -38,9 +23,10 @@ export default function Cabecalho() {
   return (
     <>
       {/* O cabeçalho é uma nuvem: branco difuso sobre o azul, sem contorno,
-          rareando até encontrar o céu do fundo sem emenda. Ver .cabecalho-nuvem. */}
-      <header ref={refCabecalho} className="cabecalho-nuvem">
-        <div className="mx-auto max-w-3xl px-4 py-4">
+          rareando até encontrar o céu do fundo sem emenda. Ver .cabecalho-nuvem.
+          Só no celular — no desktop a navegação vive no MenuLateral. */}
+      <header ref={refCabecalho} className="cabecalho-nuvem lg:hidden">
+        <div className="mx-auto max-w-5xl px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Simbolo />
@@ -81,9 +67,9 @@ export default function Cabecalho() {
       {compacto && (
         <nav
           aria-label="Navegação rápida"
-          className="fixed inset-x-0 top-0 z-40 border-b border-borda bg-papel shadow-sm"
+          className="fixed inset-x-0 top-0 z-40 border-b border-borda bg-papel shadow-sm lg:hidden"
         >
-          <ul className="mx-auto flex max-w-3xl justify-center gap-2 px-2 sm:justify-start sm:px-4">
+          <ul className="mx-auto flex max-w-5xl justify-center gap-2 px-2 sm:justify-start sm:px-4">
             {ITENS.map(({ para, curto, fim }) => (
               <li key={para}>
                 <NavLink
@@ -110,7 +96,7 @@ export default function Cabecalho() {
 /* Marcador provisório no lugar do símbolo do Movimento.
    O arquivo original, de preferência vetorial, ainda não foi obtido — PRD §12,
    questão 6. O símbolo não deve ser redesenhado: isto é só um lugar reservado. */
-function Simbolo() {
+export function Simbolo() {
   return (
     <div
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-azul-claro"

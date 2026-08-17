@@ -35,9 +35,9 @@ export default function ControleFonte() {
   const alvo = 'size-12 [&_svg]:size-6'
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <span className="hidden text-sm text-tinta-suave sm:inline">Tamanho da letra</span>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           className={alvo}

@@ -25,7 +25,7 @@ export default function Sobre() {
         </div>
       )}
 
-      <div className="texto-mensagem mt-6 space-y-4">
+      <div className="texto-mensagem mt-6 max-w-3xl space-y-4">
         {sobre.paragrafos.map((p, i) => (
           <p key={i}>{p}</p>
         ))}

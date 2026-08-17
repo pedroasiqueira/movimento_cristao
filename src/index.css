@@ -160,6 +160,22 @@ body::before {
   line-height: 1.75;
 }
 
+/*
+  Prévia da Mensagem na home: ~40% do texto esvanecendo para o branco da
+  folha, com o botão "ler completa" logo abaixo — decisão do Pedro (FR-1).
+*/
+.previa-fade {
+  position: relative;
+}
+.previa-fade::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 4.5rem;
+  background: linear-gradient(180deg, transparent, var(--papel));
+}
+
 /* Nenhuma animação para quem pediu menos movimento. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

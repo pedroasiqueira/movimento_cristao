@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
+import MenuLateral from '@/components/MenuLateral'
 import Contato from '@/components/Contato'
 import Home from '@/pages/Home'
 import Acervo from '@/pages/Acervo'
@@ -23,35 +24,43 @@ export default function App() {
 
       <Cabecalho />
 
-      {/* A folha: texto sempre sobre branco (pedido do Pedro); o céu vive em volta. */}
-      <div className="px-3 sm:px-6">
-        <main
-          id="conteudo"
-          className="mx-auto my-6 w-full max-w-3xl rounded-2xl border border-borda bg-papel px-4 py-8 shadow-sm sm:px-8"
-        >
-          <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/acervo" element={<Acervo />} />
-          <Route path="/mensagem/:data" element={<MensagemPagina />} />
-          <Route path="/musicas" element={<Musicas />} />
-          <Route path="/musica/:id" element={<MusicaPagina />} />
-          <Route path="/encontros" element={<Encontros />} />
-          <Route path="/sobre" element={<Sobre />} />
-          <Route path="*" element={<NaoEncontrada />} />
-          </Routes>
-        </main>
-      </div>
+      {/* Desktop: menu lateral fixo + coluna de conteúdo. Celular: só a coluna,
+          com o menu no Cabecalho acima. A folha branca carrega o texto; o céu
+          vive em volta. */}
+      <div className="mx-auto w-full max-w-[88rem] lg:flex lg:items-start lg:gap-8 lg:px-8 lg:pt-8">
+        <MenuLateral />
 
-      {/* Rodapé direto sobre o céu — sem folha, para o fundo respirar. */}
-      <footer className="pt-4 pb-10">
-        <div className="mx-auto max-w-3xl space-y-5 px-4 sm:px-6">
-          {/* Caminho de contato visível também no rodapé — FR-19 */}
-          <Contato />
-          <p className="text-sm text-tinta-suave">
-            Arca da Sagrada Aliança – Movimento Cristão · Natal/RN, Brasil
-          </p>
+        <div className="min-w-0 flex-1">
+          <div className="px-3 sm:px-6 lg:px-0">
+            <main
+              id="conteudo"
+              className="mx-auto my-6 w-full max-w-5xl rounded-2xl border border-borda bg-papel px-4 py-8 shadow-sm sm:px-8 lg:mt-0"
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/acervo" element={<Acervo />} />
+                <Route path="/mensagem/:data" element={<MensagemPagina />} />
+                <Route path="/musicas" element={<Musicas />} />
+                <Route path="/musica/:id" element={<MusicaPagina />} />
+                <Route path="/encontros" element={<Encontros />} />
+                <Route path="/sobre" element={<Sobre />} />
+                <Route path="*" element={<NaoEncontrada />} />
+              </Routes>
+            </main>
+          </div>
+
+          {/* Rodapé direto sobre o céu, alinhado à coluna de conteúdo. */}
+          <footer className="pt-2 pb-10">
+            <div className="mx-auto max-w-5xl space-y-5 px-4 sm:px-6">
+              {/* Caminho de contato visível também no rodapé — FR-19 */}
+              <Contato />
+              <p className="text-sm text-tinta-suave">
+                Arca da Sagrada Aliança – Movimento Cristão · Natal/RN, Brasil
+              </p>
+            </div>
+          </footer>
         </div>
-      </footer>
+      </div>
     </BrowserRouter>
   )
 }

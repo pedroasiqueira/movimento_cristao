@@ -40,7 +40,9 @@ export default function MensagemPagina() {
   const { anterior, seguinte } = vizinhas(mensagem.data)
 
   return (
-    <>
+    // Coluna de leitura: a folha é larga (desktop), a medida do texto não —
+    // linha acima de ~80 caracteres cansa, e cansa mais aos 60+.
+    <div className="mx-auto max-w-3xl">
       <AjusteLeitura
         passo={leitura.passo}
         aoMudar={(passo, mult) => setLeitura({ passo, mult })}
@@ -95,6 +97,6 @@ export default function MensagemPagina() {
           </Link>
         )}
       </nav>
-    </>
+    </div>
   )
 }
