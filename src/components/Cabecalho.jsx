@@ -1,24 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import ControleFonte from './ControleFonte'
 import { ITENS } from '@/lib/navegacao'
 
-export default function Cabecalho() {
+/**
+ * O estado "faixa fora de vista" mora no App: além da barra compacta daqui
+ * (celular), o MenuLateral o consome para receber o título no desktop.
+ * Observação passiva via IntersectionObserver: nada roda a cada pixel.
+ */
+export default function Cabecalho({ foraDeVista, aoMudar }) {
   const refCabecalho = useRef(null)
-  const [compacto, setCompacto] = useState(false)
 
-  // A barra compacta entra quando o cabeçalho completo sai da tela — e some
-  // quando ele volta. Observação passiva: nada roda a cada pixel de rolagem.
   useEffect(() => {
     const el = refCabecalho.current
     if (!el || !('IntersectionObserver' in window)) return
     const observador = new IntersectionObserver(
-      ([entrada]) => setCompacto(!entrada.isIntersecting),
+      ([entrada]) => aoMudar(!entrada.isIntersecting),
       { threshold: 0 },
     )
     observador.observe(el)
     return () => observador.disconnect()
-  }, [])
+  }, [aoMudar])
 
   return (
     <>
@@ -68,7 +70,7 @@ export default function Cabecalho() {
       {/* Barra compacta: fixa no topo enquanto a página está rolada.
           Altura no limite: os itens são exatamente os 48px mínimos de alvo de
           toque do §7 — mais estreito que isso quebraria a acessibilidade. */}
-      {compacto && (
+      {foraDeVista && (
         <nav
           aria-label="Navegação rápida"
           className="fixed inset-x-0 top-0 z-40 border-b border-borda bg-papel shadow-sm lg:hidden"

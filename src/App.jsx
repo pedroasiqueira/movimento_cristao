@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
@@ -12,6 +12,11 @@ import Encontros from '@/pages/Encontros'
 import Sobre from '@/pages/Sobre'
 
 export default function App() {
+  // A faixa do topo está fora de vista? Sinal único, medido no Cabecalho e
+  // consumido em dois lugares: a barra compacta do celular e o título que
+  // "desce" para o menu lateral no desktop.
+  const [cabecalhoFora, setCabecalhoFora] = useState(false)
+
   return (
     <BrowserRouter>
       <VoltarAoTopo />
@@ -22,14 +27,14 @@ export default function App() {
         Ir direto para o conteúdo
       </a>
 
-      <Cabecalho />
+      <Cabecalho foraDeVista={cabecalhoFora} aoMudar={setCabecalhoFora} />
 
       {/* Desktop: menu lateral fixo + coluna de conteúdo. Celular: só a coluna,
           com o menu no Cabecalho acima. A folha branca carrega o texto; o céu
           vive em volta. Sem items-start: o aside precisa esticar até a altura
           da coluna de conteúdo, senão o sticky do menu não tem onde viajar. */}
       <div className="mx-auto w-full max-w-[88rem] lg:flex lg:gap-8 lg:px-8 lg:pt-8">
-        <MenuLateral />
+        <MenuLateral mostrarTitulo={cabecalhoFora} />
 
         <div className="min-w-0 flex-1">
           <div className="px-3 sm:px-6 lg:px-0">
