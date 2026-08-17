@@ -55,15 +55,26 @@ function tokens(texto) {
     .map((t) => CANONICO.get(t) ?? t)
 }
 
-/* Índice montado uma vez por Mensagem: conjuntos de tokens canônicos por campo.
+/* Índice de conjuntos de tokens canônicos por campo. Preguiçoso e amarrado à
+   referência do acervo: quando carregarMensagens() troca a lista (dados do
+   banco chegando), o índice se remonta sozinho na busca seguinte.
    O corpo já vem sem os blocos institucionais — separação feita na importação,
    exatamente para que "Espírito da Verdade" não devolva o Acervo inteiro. */
-const INDICE = acervo.map((m) => ({
-  mensagem: m,
-  titulo: new Set(tokens(m.titulo)),
-  tags: new Set(tokens((m.tags ?? []).join(' '))),
-  corpo: new Set(tokens(m.corpo)),
-}))
+let INDICE = null
+let indexadoDe = null
+
+function indice() {
+  if (indexadoDe !== acervo) {
+    INDICE = acervo.map((m) => ({
+      mensagem: m,
+      titulo: new Set(tokens(m.titulo)),
+      tags: new Set(tokens((m.tags ?? []).join(' '))),
+      corpo: new Set(tokens(m.corpo)),
+    }))
+    indexadoDe = acervo
+  }
+  return INDICE
+}
 
 /**
  * Devolve as Mensagens relacionadas aos termos, mais relevantes primeiro.
@@ -73,7 +84,7 @@ export function buscar(consulta) {
   const termos = [...new Set(tokens(consulta))]
   if (termos.length === 0) return []
 
-  return INDICE.map(({ mensagem, titulo, tags, corpo }) => {
+  return indice().map(({ mensagem, titulo, tags, corpo }) => {
     let pontos = 0
     let encontrados = 0
     for (const t of termos) {

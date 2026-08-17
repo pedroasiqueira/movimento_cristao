@@ -1,25 +1,59 @@
-import musicas from '@/data/musicas.json'
+import musicasLocais from '@/data/musicas.json'
+import { apiGet } from './api'
 
 /*
- * As duas Músicas atuais são EXEMPLOS para avaliação de layout (flag
- * `exemplo: true`), porque o repertório real ainda não foi repassado pelo
- * Publicador — PRD §12, questão 4. O schema é o que as reais vão usar:
- * id, titulo, autores (lista, possivelmente vazia — FR-13), secoes com
- * tipo 'estrofe' | 'refrao' e linhas (versos preservados — FR-11).
+ * As Músicas nascem dos JSONs empacotados (reserva) e são trocadas pelo banco
+ * em carregarMusicas(), chamada antes do primeiro render (main.jsx). Schema:
+ * id (slug do endereço), titulo, autores (lista, possivelmente vazia — FR-13),
+ * secoes com tipo 'estrofe' | 'refrao' e linhas (versos preservados — FR-11).
  */
+
+const ordenar = (lista) =>
+  [...lista].sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'))
+
+// Inclui as despublicadas: buscarMusica precisa delas para a página de
+// aviso do FR-21. Quem filtra para a listagem é `repertorio`.
+let todas = musicasLocais
 
 /**
  * Ordenadas por título, para a listagem — FR-10.
  * Músicas com `despublicada: true` saem da listagem e da busca (FR-21),
- * mas o endereço continua respondendo com aviso — ver buscarMusica.
+ * mas o endereço continua respondendo — ver buscarMusica.
+ * Export `let`: binding vivo, atualizado por carregarMusicas().
  */
-export const repertorio = musicas
-  .filter((m) => !m.despublicada)
-  .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'))
+export let repertorio = ordenar(todas.filter((m) => !m.despublicada))
+
+/** Documento da API → forma que as páginas usam (o slug do banco é o id daqui). */
+const daApi = (m) => ({
+  id: m.slug,
+  titulo: m.titulo,
+  autores: m.autores ?? [],
+  secoes: m.secoes ?? [],
+  despublicada: Boolean(m.despublicada),
+  exemplo: Boolean(m.exemplo),
+})
+
+/**
+ * Troca a reserva pelos dados do banco. Nunca lança: com a API fora do ar ou
+ * o banco vazio, os JSONs empacotados seguem valendo.
+ */
+export async function carregarMusicas() {
+  try {
+    const lista = await apiGet('/musicas?incluir=despublicadas')
+    if (Array.isArray(lista) && lista.length > 0) {
+      todas = lista.map(daApi)
+      repertorio = ordenar(todas.filter((m) => !m.despublicada))
+    } else {
+      console.warn('API sem músicas — usando os dados empacotados.')
+    }
+  } catch (erro) {
+    console.warn('API indisponível — usando os dados empacotados.', erro)
+  }
+}
 
 /** Devolve também as despublicadas: a página é quem exibe o aviso — FR-21. */
 export function buscarMusica(id) {
-  return musicas.find((m) => m.id === id) ?? null
+  return todas.find((m) => m.id === id) ?? null
 }
 
 function normalizar(t) {

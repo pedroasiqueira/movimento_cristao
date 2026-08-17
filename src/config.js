@@ -5,6 +5,11 @@
  * inteiro, sem tocar em componente nenhum.
  */
 
+/** Endereço da API (movimento_cristao_api). Em produção, defina VITE_API_URL
+ *  no ambiente de build. Se a API estiver fora do ar, o site continua de pé
+ *  com os JSONs empacotados — ver src/lib/api.js e main.jsx. */
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
 /** Número de WhatsApp do contato (FR-19) — PRD §12, questão 9.
  *  Formato internacional, só dígitos. Ex.: '5584999990000'. */
 export const WHATSAPP_CONTATO = null

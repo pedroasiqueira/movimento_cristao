@@ -1,29 +1,30 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Check, Copy, Plus, X } from 'lucide-react'
+import { ArrowLeft, Check, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Letra from '@/components/Letra'
-import { buscarMusica, gerarIdMusica } from '@/lib/musicas'
+import { apiEnviar } from '@/lib/api'
+import { buscarMusica, carregarMusicas, gerarIdMusica } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 
 /**
- * Cadastro de Música — Área Admin, Fase 1 (sem backend).
- * "Salvar" gera o JSON no schema de src/data/musicas.json para o Construtor
- * colar no arquivo — exatamente o fluxo de carga da Fase 1 (PRD §10.0).
- * Quando houver backend, este mesmo formulário passa a salvar de verdade.
- * O formulário só pede o que o schema tem: título, autores (FR-13) e a letra
- * em seções estrofe/refrão com um verso por linha (FR-11, FR-14).
+ * Cadastro de Música — Área Admin.
+ * "Salvar" publica de verdade: POST /musicas na API com o token do login,
+ * e recarrega o repertório em memória para a música aparecer no site na
+ * hora. O formulário só pede o que o schema tem: título, autores (FR-13) e
+ * a letra em seções estrofe/refrão com um verso por linha (FR-11, FR-14).
  */
 
 let SEQ = 0
 const novaSecao = (tipo) => ({ chave: ++SEQ, tipo, texto: '' })
 
-export default function AdminMusicaNova() {
+export default function AdminMusicaNova({ token }) {
   useTitulo('Adicionar música')
   const [titulo, setTitulo] = useState('')
   const [autores, setAutores] = useState('')
   const [secoes, setSecoes] = useState(() => [novaSecao('estrofe')])
   const [erros, setErros] = useState({})
+  const [salvando, setSalvando] = useState(false)
   const [salva, setSalva] = useState(null)
 
   const id = gerarIdMusica(titulo)
@@ -41,7 +42,7 @@ export default function AdminMusicaNova() {
     setSecoes((atuais) => atuais.map((s) => (s.chave === chave ? { ...s, ...mudanca } : s)))
   }
 
-  function salvar(e) {
+  async function salvar(e) {
     e.preventDefault()
     const encontrados = {}
     if (!titulo.trim()) encontrados.titulo = 'A música precisa de um título.'
@@ -50,8 +51,29 @@ export default function AdminMusicaNova() {
     setErros(encontrados)
     if (Object.keys(encontrados).length > 0) return
 
-    setSalva({ id, titulo: titulo.trim(), autores: listaAutores, secoes: secoesLimpas })
-    window.scrollTo(0, 0)
+    setSalvando(true)
+    try {
+      const criada = await apiEnviar(
+        'POST',
+        '/musicas',
+        { titulo: titulo.trim(), autores: listaAutores, secoes: secoesLimpas },
+        token,
+      )
+      // O repertório em memória é recarregado do banco: a música nova já
+      // aparece na listagem e na busca sem recarregar a página.
+      await carregarMusicas()
+      setSalva({ slug: criada.slug, titulo: criada.titulo })
+      window.scrollTo(0, 0)
+    } catch (falha) {
+      setErros({
+        api:
+          falha.status === 401
+            ? 'A sessão expirou. Saia e entre de novo na Área Admin.'
+            : `Não foi possível salvar: ${falha.message}`,
+      })
+    } finally {
+      setSalvando(false)
+    }
   }
 
   function recomecar() {
@@ -196,8 +218,14 @@ export default function AdminMusicaNova() {
             </div>
           </div>
 
-          <Button type="submit" className="min-h-12 px-6">
-            Salvar música
+          {erros.api && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {erros.api}
+            </p>
+          )}
+
+          <Button type="submit" disabled={salvando} className="min-h-12 px-6">
+            {salvando ? 'Salvando…' : 'Salvar música'}
           </Button>
         </div>
 
@@ -223,44 +251,26 @@ export default function AdminMusicaNova() {
   )
 }
 
-/**
- * Fase 1: o resultado é o JSON pronto para o Construtor colar em
- * src/data/musicas.json — a carga por arquivo do PRD §10.0.
- */
+/** A música foi gravada no banco pela API — já está no ar. */
 function Sucesso({ musica, aoRecomecar }) {
-  const [copiado, setCopiado] = useState(false)
-  const json = JSON.stringify(musica, null, 2)
-
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(json)
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2500)
-    } catch {
-      // Sem clipboard (contexto inseguro): o bloco está na tela para seleção manual.
-    }
-  }
-
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="font-leitura text-3xl font-bold text-tinta">Música pronta</h1>
-      <p className="mt-2 text-tinta-suave">
-        <strong className="font-semibold text-tinta">{musica.titulo}</strong> foi montada no
-        formato do site. Cole o bloco abaixo dentro da lista em{' '}
-        <code className="rounded bg-papel-suave px-1.5 py-0.5 text-sm">src/data/musicas.json</code>{' '}
-        (com uma vírgula após o bloco anterior). Quando o backend existir, este passo some: o
-        botão salvará direto no site.
+      <div className="flex items-center gap-3">
+        <Check size={28} aria-hidden className="shrink-0 text-azul" />
+        <h1 className="font-leitura text-3xl font-bold text-tinta">Música publicada</h1>
+      </div>
+      <p className="mt-3 text-tinta-suave">
+        <strong className="font-semibold text-tinta">{musica.titulo}</strong> já está no
+        site — na listagem, na busca e no endereço próprio dela.
       </p>
 
-      <pre className="mt-5 overflow-x-auto rounded-lg border border-borda bg-papel-suave p-4 text-sm leading-relaxed text-tinta">
-        {json}
-      </pre>
-
       <div className="mt-5 flex flex-wrap gap-3">
-        <Button className="min-h-12 gap-2 px-5" onClick={copiar}>
-          {copiado ? <Check aria-hidden /> : <Copy aria-hidden />}
-          {copiado ? 'Copiado!' : 'Copiar JSON'}
-        </Button>
+        <Link
+          to={`/musica/${musica.slug}`}
+          className="inline-flex min-h-12 items-center rounded-lg bg-azul px-5 font-medium text-white hover:bg-azul-escuro"
+        >
+          Ver a página da música
+        </Link>
         <Button variant="outline" className="min-h-12 px-5" onClick={aoRecomecar}>
           Cadastrar outra
         </Button>

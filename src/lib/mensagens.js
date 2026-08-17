@@ -1,4 +1,5 @@
 import mensagens from '@/data/mensagens.json'
+import { apiGet } from './api'
 
 /** Fuso do Movimento. A data de referência nunca vem do relógio do aparelho — FR-1. */
 const FUSO = 'America/Fortaleza'
@@ -69,8 +70,44 @@ export function rotuloMes(iso) {
   return `${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`
 }
 
-/** Ordenadas da mais recente para a mais antiga. */
-export const acervo = [...mensagens].sort((a, b) => b.data.localeCompare(a.data))
+const ordenar = (lista) => [...lista].sort((a, b) => b.data.localeCompare(a.data))
+
+/**
+ * Ordenadas da mais recente para a mais antiga.
+ * Nasce dos JSONs empacotados (reserva) e é trocado pelo banco em
+ * carregarMensagens(), chamada antes do primeiro render (main.jsx) — export
+ * `let`: o binding é vivo, quem importa vê a lista nova.
+ */
+export let acervo = ordenar(mensagens)
+
+/** Documento da API → forma que as páginas usam (só os campos do schema). */
+const daApi = (m) => ({
+  data: m.data,
+  titulo: m.titulo,
+  corpo: m.corpo,
+  assinatura: m.assinatura ?? null,
+  proveniencia: m.proveniencia ?? null,
+  canal: m.canal ?? null,
+  tags: m.tags ?? [],
+})
+
+/**
+ * Troca a reserva pelos dados do banco. Nunca lança: com a API fora do ar ou
+ * o banco vazio, os JSONs empacotados seguem valendo — o site nunca abre
+ * vazio (FR-2).
+ */
+export async function carregarMensagens() {
+  try {
+    const lista = await apiGet('/mensagens')
+    if (Array.isArray(lista) && lista.length > 0) {
+      acervo = ordenar(lista.map(daApi))
+    } else {
+      console.warn('API sem mensagens — usando os dados empacotados.')
+    }
+  } catch (erro) {
+    console.warn('API indisponível — usando os dados empacotados.', erro)
+  }
+}
 
 export function buscarPorData(iso) {
   return acervo.find((m) => m.data === iso) ?? null

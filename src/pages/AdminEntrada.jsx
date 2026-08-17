@@ -1,15 +1,16 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LogIn, LogOut, Music } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { apiEnviar } from '@/lib/api'
 import { ITENS_ADMIN } from '@/lib/navegacao'
 import { useTitulo } from '@/hooks/useTitulo'
 
 /**
  * Porta da Área Admin — rota discreta /admin, fora de qualquer menu público
  * (decisão do Pedro, 17/08/2026; mesmo espírito dos links de Encontro, PRD
- * §4.3: acesso distribuído em privado). Na Fase 1 não há autenticação real:
- * entrar apenas identifica o administrador neste navegador. O mecanismo
- * verdadeiro chega com a decisão de backend (addendum §2).
+ * §4.3: acesso distribuído em privado). O login é validado pela API
+ * (POST /auth/login → JWT de 7 dias), que é quem protege as escritas.
  */
 export default function AdminEntrada({ admin, aoEntrar, aoSair }) {
   useTitulo('Área Admin')
@@ -17,6 +18,32 @@ export default function AdminEntrada({ admin, aoEntrar, aoSair }) {
 }
 
 function Entrada({ aoEntrar }) {
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
+  const [erro, setErro] = useState(null)
+  const [enviando, setEnviando] = useState(false)
+
+  async function enviar(e) {
+    e.preventDefault()
+    setErro(null)
+    setEnviando(true)
+    try {
+      const { access_token } = await apiEnviar('POST', '/auth/login', {
+        email,
+        password: senha,
+      })
+      aoEntrar(access_token)
+    } catch (falha) {
+      setErro(
+        falha.status === 401
+          ? 'E-mail ou senha incorretos.'
+          : `Não foi possível entrar: ${falha.message}`,
+      )
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   return (
     <div className="mx-auto max-w-xl">
       <h1 className="font-leitura text-3xl font-bold text-tinta">Área Admin</h1>
@@ -24,26 +51,18 @@ function Entrada({ aoEntrar }) {
         Entrada para quem publica o conteúdo do site.
       </p>
 
-      <div className="mt-4 rounded-lg border border-dashed border-borda bg-papel-suave px-4 py-3 text-sm text-tinta-suave">
-        Fase 1: a autenticação real chega com o backend. Entrar aqui apenas
-        identifica o administrador neste navegador.
-      </div>
-
-      <form
-        className="mt-6 space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault()
-          aoEntrar()
-        }}
-      >
+      <form className="mt-6 space-y-4" onSubmit={enviar}>
         <div>
-          <label htmlFor="admin-usuario" className="mb-1.5 block font-medium text-tinta">
-            Usuário
+          <label htmlFor="admin-email" className="mb-1.5 block font-medium text-tinta">
+            E-mail
           </label>
           <input
-            id="admin-usuario"
-            type="text"
+            id="admin-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             autoComplete="username"
+            required
             className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
           />
         </div>
@@ -54,13 +73,21 @@ function Entrada({ aoEntrar }) {
           <input
             id="admin-senha"
             type="password"
+            value={senha}
+            onChange={(e) => setSenha(e.target.value)}
             autoComplete="current-password"
+            required
             className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
           />
         </div>
-        <Button type="submit" className="min-h-12 gap-2 px-6">
+        {erro && (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {erro}
+          </p>
+        )}
+        <Button type="submit" disabled={enviando} className="min-h-12 gap-2 px-6">
           <LogIn aria-hidden />
-          Entrar
+          {enviando ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
     </div>

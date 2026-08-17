@@ -19,34 +19,36 @@ export default function App() {
   // "desce" para o menu lateral no desktop.
   const [cabecalhoFora, setCabecalhoFora] = useState(false)
 
-  // Identificação de administrador — Fase 1, sem autenticação real: é uma
-  // conveniência visual (some/aparece a Área Admin), não segurança. Qualquer
-  // pessoa pode gravar a chave; nada é publicável do navegador de toda forma.
-  // A autenticação verdadeira chega com a decisão de backend (addendum §2).
-  const [admin, setAdmin] = useState(() => {
+  // Identificação de administrador — o token JWT vem do POST /auth/login da
+  // API (7 dias). A presença do token controla o que a interface MOSTRA;
+  // a proteção real é da API, que rejeita escrita sem token válido. Se o
+  // token expirar, a próxima gravação devolve 401 e a tela pede novo login.
+  const [tokenAdmin, setTokenAdmin] = useState(() => {
     try {
-      return localStorage.getItem('mc:admin') === '1'
+      localStorage.removeItem('mc:admin') // chave da fase sem backend, aposentada
+      return localStorage.getItem('mc:token')
     } catch {
-      return false
+      return null
     }
   })
+  const admin = Boolean(tokenAdmin)
 
-  function entrarAdmin() {
+  function entrarAdmin(token) {
     try {
-      localStorage.setItem('mc:admin', '1')
+      localStorage.setItem('mc:token', token)
     } catch {
       // Sem armazenamento (navegador embutido restrito): vale só nesta visita.
     }
-    setAdmin(true)
+    setTokenAdmin(token)
   }
 
   function sairAdmin() {
     try {
-      localStorage.removeItem('mc:admin')
+      localStorage.removeItem('mc:token')
     } catch {
       // Sem armazenamento: nada a limpar.
     }
-    setAdmin(false)
+    setTokenAdmin(null)
   }
 
   return (
@@ -90,10 +92,16 @@ export default function App() {
                   path="/admin"
                   element={<AdminEntrada admin={admin} aoEntrar={entrarAdmin} aoSair={sairAdmin} />}
                 />
-                {/* Guarda visual, não segurança — ver o comentário do estado admin. */}
+                {/* Guarda visual; a proteção real é a API exigir o token. */}
                 <Route
                   path="/admin/musica/nova"
-                  element={admin ? <AdminMusicaNova /> : <Navigate to="/admin" replace />}
+                  element={
+                    admin ? (
+                      <AdminMusicaNova token={tokenAdmin} />
+                    ) : (
+                      <Navigate to="/admin" replace />
+                    )
+                  }
                 />
                 <Route path="/sobre" element={<Sobre />} />
                 <Route path="*" element={<NaoEncontrada />} />
