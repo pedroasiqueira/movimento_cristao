@@ -23,8 +23,13 @@ export default function App() {
 
       <Cabecalho />
 
-      <main id="conteudo" className="mx-auto max-w-3xl px-4 py-8">
-        <Routes>
+      {/* A folha: texto sempre sobre branco (pedido do Pedro); o céu vive em volta. */}
+      <div className="px-3 sm:px-6">
+        <main
+          id="conteudo"
+          className="mx-auto my-6 w-full max-w-3xl rounded-2xl border border-borda bg-papel px-4 py-8 shadow-sm sm:px-8"
+        >
+          <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/acervo" element={<Acervo />} />
           <Route path="/mensagem/:data" element={<MensagemPagina />} />
@@ -33,11 +38,13 @@ export default function App() {
           <Route path="/encontros" element={<Encontros />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="*" element={<NaoEncontrada />} />
-        </Routes>
-      </main>
+          </Routes>
+        </main>
+      </div>
 
-      <footer className="mt-12 border-t border-borda py-8">
-        <div className="mx-auto max-w-3xl space-y-5 px-4">
+      {/* Rodapé direto sobre o céu — sem folha, para o fundo respirar. */}
+      <footer className="pt-4 pb-10">
+        <div className="mx-auto max-w-3xl space-y-5 px-4 sm:px-6">
           {/* Caminho de contato visível também no rodapé — FR-19 */}
           <Contato />
           <p className="text-sm text-tinta-suave">

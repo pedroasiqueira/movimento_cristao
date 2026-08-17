@@ -14,6 +14,9 @@
   --borda: #d4dde6;
   --papel: #ffffff;
   --papel-suave: #f7fafc;
+  --ceu-alto: #dbeaf6;       /* topo do céu — azul do Movimento, diluído */
+  --ceu-baixo: #f3f7fb;      /* meio do céu */
+  --horizonte: #f8f0e2;      /* horizonte — areia dourada do amanhecer */
 
   /*
     Contrato de cores do shadcn/ui, apontado para a paleta acima.
@@ -99,8 +102,27 @@ html[data-escala="3"] { font-size: 26px; }
 body {
   font-family: var(--font-interface);
   color: var(--color-tinta);
-  background: var(--color-papel);
+  background: var(--ceu-baixo);
   line-height: 1.6;
+}
+
+/*
+  O céu — resposta ao "site sem vida" do Pedro, dentro das anti-referências
+  de §5: cor calma, estática, sem imagem pesada (rede fraca, §7). Um degradê
+  de amanhecer atrás de tudo; o conteúdo descansa numa folha branca por cima.
+  Camada fixa em pseudo-elemento: cobre a janela inteira, estável em qualquer
+  navegador, sem repintura ao rolar.
+*/
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(55rem 38rem at 88% -12%, rgba(10, 79, 143, 0.10), transparent 60%),
+    radial-gradient(48rem 34rem at -12% 18%, rgba(125, 178, 220, 0.18), transparent 55%),
+    radial-gradient(62rem 32rem at 50% 108%, rgba(222, 168, 92, 0.20), transparent 62%),
+    linear-gradient(180deg, var(--ceu-alto) 0%, var(--ceu-baixo) 52%, var(--horizonte) 100%);
 }
 
 /* Foco sempre visível — §7. */
