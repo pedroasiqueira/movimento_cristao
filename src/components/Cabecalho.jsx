@@ -1,14 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
 import ControleFonte from './ControleFonte'
-import { ITENS } from '@/lib/navegacao'
+import { ITENS, ITENS_ADMIN } from '@/lib/navegacao'
 
 /**
  * O estado "faixa fora de vista" mora no App: além da barra compacta daqui
  * (celular), o MenuLateral o consome para receber o título no desktop.
  * Observação passiva via IntersectionObserver: nada roda a cada pixel.
  */
-export default function Cabecalho({ foraDeVista, aoMudar }) {
+export default function Cabecalho({ foraDeVista, aoMudar, admin = false, aoSairAdmin }) {
   const refCabecalho = useRef(null)
 
   useEffect(() => {
@@ -64,6 +65,43 @@ export default function Cabecalho({ foraDeVista, aoMudar }) {
               ))}
             </ul>
           </nav>
+
+          {/* Área Admin no celular — mesmo sinal do cartão do desktop.
+              A barra compacta de rolagem não a exibe: continua só as seções. */}
+          {admin && (
+            <div className="mt-3 lg:hidden">
+              <p className="text-xs font-semibold tracking-wide text-azul-escuro uppercase">
+                Área Admin
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {ITENS_ADMIN.map(({ para, rotulo }) => (
+                  <li key={para}>
+                    <NavLink
+                      to={para}
+                      className={({ isActive }) =>
+                        'flex min-h-12 items-center rounded-lg px-4 transition-colors ' +
+                        (isActive
+                          ? 'bg-azul text-white'
+                          : 'text-tinta hover:bg-azul-claro hover:text-azul-escuro')
+                      }
+                    >
+                      {rotulo}
+                    </NavLink>
+                  </li>
+                ))}
+                <li>
+                  <button
+                    type="button"
+                    onClick={aoSairAdmin}
+                    className="flex min-h-12 items-center gap-1.5 rounded-lg px-4 text-tinta-suave transition-colors hover:bg-azul-claro hover:text-azul-escuro"
+                  >
+                    <LogOut size={18} aria-hidden />
+                    Sair
+                  </button>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
       </header>
 

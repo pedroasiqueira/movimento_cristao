@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
 import Contato from '@/components/Contato'
@@ -10,12 +10,44 @@ import Musicas from '@/pages/Musicas'
 import MusicaPagina from '@/pages/MusicaPagina'
 import Encontros from '@/pages/Encontros'
 import Sobre from '@/pages/Sobre'
+import AdminEntrada from '@/pages/AdminEntrada'
+import AdminMusicaNova from '@/pages/AdminMusicaNova'
 
 export default function App() {
   // A faixa do topo está fora de vista? Sinal único, medido no Cabecalho e
   // consumido em dois lugares: a barra compacta do celular e o título que
   // "desce" para o menu lateral no desktop.
   const [cabecalhoFora, setCabecalhoFora] = useState(false)
+
+  // Identificação de administrador — Fase 1, sem autenticação real: é uma
+  // conveniência visual (some/aparece a Área Admin), não segurança. Qualquer
+  // pessoa pode gravar a chave; nada é publicável do navegador de toda forma.
+  // A autenticação verdadeira chega com a decisão de backend (addendum §2).
+  const [admin, setAdmin] = useState(() => {
+    try {
+      return localStorage.getItem('mc:admin') === '1'
+    } catch {
+      return false
+    }
+  })
+
+  function entrarAdmin() {
+    try {
+      localStorage.setItem('mc:admin', '1')
+    } catch {
+      // Sem armazenamento (navegador embutido restrito): vale só nesta visita.
+    }
+    setAdmin(true)
+  }
+
+  function sairAdmin() {
+    try {
+      localStorage.removeItem('mc:admin')
+    } catch {
+      // Sem armazenamento: nada a limpar.
+    }
+    setAdmin(false)
+  }
 
   return (
     <BrowserRouter>
@@ -27,14 +59,19 @@ export default function App() {
         Ir direto para o conteúdo
       </a>
 
-      <Cabecalho foraDeVista={cabecalhoFora} aoMudar={setCabecalhoFora} />
+      <Cabecalho
+        foraDeVista={cabecalhoFora}
+        aoMudar={setCabecalhoFora}
+        admin={admin}
+        aoSairAdmin={sairAdmin}
+      />
 
       {/* Desktop: menu lateral fixo + coluna de conteúdo. Celular: só a coluna,
           com o menu no Cabecalho acima. A folha branca carrega o texto; o céu
           vive em volta. Sem items-start: o aside precisa esticar até a altura
           da coluna de conteúdo, senão o sticky do menu não tem onde viajar. */}
       <div className="mx-auto w-full max-w-[88rem] lg:flex lg:gap-8 lg:px-8 lg:pt-8">
-        <MenuLateral mostrarTitulo={cabecalhoFora} />
+        <MenuLateral mostrarTitulo={cabecalhoFora} admin={admin} aoSairAdmin={sairAdmin} />
 
         <div className="min-w-0 flex-1">
           <div className="px-3 sm:px-6 lg:px-0">
@@ -49,6 +86,15 @@ export default function App() {
                 <Route path="/musicas" element={<Musicas />} />
                 <Route path="/musica/:id" element={<MusicaPagina />} />
                 <Route path="/encontros" element={<Encontros />} />
+                <Route
+                  path="/admin"
+                  element={<AdminEntrada admin={admin} aoEntrar={entrarAdmin} aoSair={sairAdmin} />}
+                />
+                {/* Guarda visual, não segurança — ver o comentário do estado admin. */}
+                <Route
+                  path="/admin/musica/nova"
+                  element={admin ? <AdminMusicaNova /> : <Navigate to="/admin" replace />}
+                />
                 <Route path="/sobre" element={<Sobre />} />
                 <Route path="*" element={<NaoEncontrada />} />
               </Routes>

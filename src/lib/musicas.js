@@ -26,6 +26,17 @@ function normalizar(t) {
   return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+/**
+ * Gera o id (endereço /musica/<id>) de uma nova Música a partir do título —
+ * FR-14. Mesma normalização da busca: minúsculas, sem acento; o que não é
+ * letra ou número vira hífen.
+ */
+export function gerarIdMusica(titulo) {
+  return normalizar(titulo.trim())
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 /** Filtra por título ou trecho da letra — FR-10. */
 export function filtrarMusicas(consulta) {
   const q = normalizar(consulta.trim())

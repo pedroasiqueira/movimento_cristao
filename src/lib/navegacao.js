@@ -10,3 +10,12 @@ export const ITENS = [
   { para: '/encontros', rotulo: 'Encontros', curto: 'Encontros' },
   { para: '/sobre', rotulo: 'Sobre', curto: 'Sobre' },
 ]
+
+/*
+  Itens da Área Admin — visíveis apenas com o administrador identificado.
+  Não entram na barra compacta do celular. "Adicionar mensagem do dia"
+  entrará aqui quando o Pedro definir esse fluxo.
+*/
+export const ITENS_ADMIN = [
+  { para: '/admin/musica/nova', rotulo: 'Adicionar música' },
+]
