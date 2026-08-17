@@ -162,9 +162,9 @@ export default function Acervo() {
               <section key={g.chave} aria-labelledby={`titulo-${g.chave}`} className="mt-8">
                 <h2
                   id={`titulo-${g.chave}`}
-                  className="scroll-mt-4 border-b border-borda pb-2 text-lg font-semibold text-azul-escuro"
+                  className="scroll-mt-20 border-b border-borda pb-2 text-lg font-semibold text-azul-escuro"
                 >
-                  <span id={`mes-${g.chave}`} className="scroll-mt-6">
+                  <span id={`mes-${g.chave}`} className="scroll-mt-24">
                     {g.rotulo}
                   </span>
                 </h2>

@@ -54,6 +54,8 @@
   --color-borda: var(--borda);
   --color-papel: var(--papel);
   --color-papel-suave: var(--papel-suave);
+  --color-ceu-alto: var(--ceu-alto);
+  --color-horizonte: var(--horizonte);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -121,8 +123,23 @@ body::before {
   background:
     radial-gradient(55rem 38rem at 88% -12%, rgba(10, 79, 143, 0.10), transparent 60%),
     radial-gradient(48rem 34rem at -12% 18%, rgba(125, 178, 220, 0.18), transparent 55%),
-    radial-gradient(62rem 32rem at 50% 108%, rgba(222, 168, 92, 0.20), transparent 62%),
+    radial-gradient(62rem 32rem at 50% 108%, rgba(222, 168, 92, 0.10), transparent 62%),
     linear-gradient(180deg, var(--ceu-alto) 0%, var(--ceu-baixo) 52%, var(--horizonte) 100%);
+}
+
+/*
+  Cabeçalho-nuvem — pedido do Pedro: nada de contorno de nuvem, só a
+  sensação. Massas de branco difuso (radiais suaves, sem borda) sobre o azul
+  do céu, mais densas no alto e rareando para baixo, onde o tom se encontra
+  com o fundo da página sem emenda.
+*/
+.cabecalho-nuvem {
+  background:
+    radial-gradient(30rem 13rem at 10% -15%, rgba(255, 255, 255, 0.95), transparent 65%),
+    radial-gradient(34rem 15rem at 55% -25%, rgba(255, 255, 255, 0.9), transparent 62%),
+    radial-gradient(26rem 11rem at 92% 0%, rgba(255, 255, 255, 0.85), transparent 62%),
+    radial-gradient(22rem 10rem at 30% 45%, rgba(255, 255, 255, 0.6), transparent 60%),
+    linear-gradient(180deg, #eef5fb 0%, var(--ceu-alto) 100%);
 }
 
 /* Foco sempre visível — §7. */
