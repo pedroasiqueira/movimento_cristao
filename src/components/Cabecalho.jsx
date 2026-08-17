@@ -30,7 +30,7 @@ export default function Cabecalho() {
         </div>
 
         <nav aria-label="Navegação principal" className="mt-4">
-          <ul className="flex flex-wrap gap-1.5">
+          <ul className="flex flex-wrap gap-2">
             {ITENS.map(({ para, rotulo, fim }) => (
               <li key={para}>
                 <NavLink

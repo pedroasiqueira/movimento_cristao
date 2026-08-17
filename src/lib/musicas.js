@@ -8,13 +8,18 @@ import musicas from '@/data/musicas.json'
  * tipo 'estrofe' | 'refrao' e linhas (versos preservados — FR-11).
  */
 
-/** Ordenadas por título, para a listagem — FR-10. */
-export const repertorio = [...musicas].sort((a, b) =>
-  a.titulo.localeCompare(b.titulo, 'pt-BR'),
-)
+/**
+ * Ordenadas por título, para a listagem — FR-10.
+ * Músicas com `despublicada: true` saem da listagem e da busca (FR-21),
+ * mas o endereço continua respondendo com aviso — ver buscarMusica.
+ */
+export const repertorio = musicas
+  .filter((m) => !m.despublicada)
+  .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'))
 
+/** Devolve também as despublicadas: a página é quem exibe o aviso — FR-21. */
 export function buscarMusica(id) {
-  return repertorio.find((m) => m.id === id) ?? null
+  return musicas.find((m) => m.id === id) ?? null
 }
 
 function normalizar(t) {

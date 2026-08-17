@@ -37,7 +37,7 @@ export default function ControleFonte() {
   return (
     <div className="flex items-center gap-2">
       <span className="hidden text-sm text-tinta-suave sm:inline">Tamanho da letra</span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           className={alvo}

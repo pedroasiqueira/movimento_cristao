@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Maximize2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
+import AjusteLeitura from '@/components/AjusteLeitura'
 import { buscarMusica } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 
@@ -15,12 +16,32 @@ export default function MusicaPagina() {
   const { id } = useParams()
   const musica = buscarMusica(id ?? '')
   const [modoCanto, setModoCanto] = useState(false)
+  const [leitura, setLeitura] = useState({ passo: 0, mult: 1 })
   useTitulo(musica?.titulo)
 
   if (!musica) {
     return (
       <div className="rounded-lg border border-borda px-6 py-10 text-center">
         <h1 className="font-leitura text-2xl font-bold text-tinta">Música não encontrada</h1>
+        <Link
+          to="/musicas"
+          className="mt-6 inline-flex min-h-12 items-center rounded-lg bg-azul px-5 font-medium text-white hover:bg-azul-escuro"
+        >
+          Ver todas as músicas
+        </Link>
+      </div>
+    )
+  }
+
+  // FR-21: despublicada sai da listagem e da busca, mas o endereço continua
+  // respondendo — um link enviado no WhatsApp anos atrás não pode quebrar.
+  if (musica.despublicada) {
+    return (
+      <div className="rounded-lg border border-borda px-6 py-10 text-center">
+        <h1 className="font-leitura text-2xl font-bold text-tinta">{musica.titulo}</h1>
+        <p className="mt-3 text-tinta-suave">
+          Esta música não está mais disponível no site.
+        </p>
         <Link
           to="/musicas"
           className="mt-6 inline-flex min-h-12 items-center rounded-lg bg-azul px-5 font-medium text-white hover:bg-azul-escuro"
@@ -53,7 +74,14 @@ export default function MusicaPagina() {
         <BotaoCompartilhar titulo={musica.titulo} caminho={`/musica/${musica.id}`} />
       </div>
 
-      <Letra secoes={musica.secoes} className="texto-mensagem mt-8" />
+      {/* Ajuste local de leitura — FR-18 vale também para Música. */}
+      <AjusteLeitura
+        passo={leitura.passo}
+        aoMudar={(passo, mult) => setLeitura({ passo, mult })}
+      />
+      <div style={{ fontSize: `${leitura.mult}em` }}>
+        <Letra secoes={musica.secoes} className="texto-mensagem mt-4" />
+      </div>
 
       {modoCanto && <ModoCanto musica={musica} aoSair={() => setModoCanto(false)} />}
     </>
