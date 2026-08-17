@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
  * restante do site. Compõe com a preferência global (FR-17) como
  * multiplicador: o corpo usa `em`, então o resultado é global × local,
  * com teto — a consequência exigida pelo FR.
+ * Cinco passos em progressão geométrica (~19% cada): o quinto dobra o texto.
  */
-const PASSOS = [1, 1.18, 1.36]
+const PASSOS = [1, 1.19, 1.41, 1.68, 2]
 
 /** aoMudar(passo, multiplicador) — a página aplica o multiplicador em `em`. */
 export default function AjusteLeitura({ passo, aoMudar }) {
