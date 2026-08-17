@@ -52,6 +52,23 @@ export function ehDomingo(iso) {
   return paraData(iso).getUTCDay() === 0
 }
 
+/** 0 = domingo … 6 = sábado. */
+export function diaDaSemana(iso) {
+  return paraData(iso).getUTCDay()
+}
+
+export function somarDias(iso, n) {
+  const d = paraData(iso)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+/** "agosto de 2026" a partir de qualquer data do mês. */
+export function rotuloMes(iso) {
+  const d = paraData(iso)
+  return `${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`
+}
+
 /** Ordenadas da mais recente para a mais antiga. */
 export const acervo = [...mensagens].sort((a, b) => b.data.localeCompare(a.data))
 
@@ -88,6 +105,34 @@ export function destaqueDaHome(hoje = hojeNoMovimento()) {
     mensagem: ultima,
     situacao: diasAtras <= DIAS_ATE_DEFASAGEM ? 'recente' : 'defasada',
     diasAtras,
+  }
+}
+
+/**
+ * Acervo agrupado por mês, do mais recente ao mais antigo — FR-5.
+ * Cada grupo: { chave: '2026-08', rotulo: 'agosto de 2026', itens: [...] }.
+ */
+export function acervoPorMes(lista = acervo) {
+  const grupos = []
+  for (const m of lista) {
+    const chave = m.data.slice(0, 7)
+    const ultimo = grupos.at(-1)
+    if (ultimo?.chave === chave) ultimo.itens.push(m)
+    else grupos.push({ chave, rotulo: rotuloMes(m.data), itens: [m] })
+  }
+  return grupos
+}
+
+/**
+ * Mensagem anterior e seguinte no tempo — FR-5.
+ * "Anterior" é a mais antiga que a atual; "seguinte", a mais recente.
+ */
+export function vizinhas(iso) {
+  const i = acervo.findIndex((m) => m.data === iso)
+  if (i === -1) return { anterior: null, seguinte: null }
+  return {
+    anterior: acervo[i + 1] ?? null, // acervo está do mais recente ao mais antigo
+    seguinte: acervo[i - 1] ?? null,
   }
 }
 
