@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/*
+  Identidade: azul institucional, herdado do símbolo do Movimento.
+  Paleta de cor única por decisão — PRD §5. Contrastes conferidos contra
+  o piso de §7: 7:1 para corpo de texto, 4,5:1 para interface.
+*/
+:root {
+  --tinta: #16191d;          /* corpo — 16,4:1 sobre branco */
+  --tinta-suave: #4b5563;    /* secundário — 7,6:1 */
+  --azul: #0a4f8f;           /* destaque — 7,4:1 */
+  --azul-escuro: #073a6b;    /* hover e foco — 10,3:1 */
+  --azul-claro: #e8f0f8;     /* superfície */
+  --borda: #d4dde6;
+  --papel: #ffffff;
+  --papel-suave: #f7fafc;
+
+  /*
+    Contrato de cores do shadcn/ui, apontado para a paleta acima.
+    Sem isto os componentes viriam no cinza padrão da biblioteca e o site
+    teria duas identidades. Nenhum componente shadcn precisa ser editado.
+  */
+  --background: var(--papel);
+  --foreground: var(--tinta);
+  --card: var(--papel);
+  --card-foreground: var(--tinta);
+  --popover: var(--papel);
+  --popover-foreground: var(--tinta);
+  --primary: var(--azul);
+  --primary-foreground: #ffffff;
+  --secondary: var(--azul-claro);
+  --secondary-foreground: var(--azul-escuro);
+  --muted: var(--papel-suave);
+  --muted-foreground: var(--tinta-suave);
+  --accent: var(--azul-claro);
+  --accent-foreground: var(--azul-escuro);
+  --destructive: #9b1c1c;
+  --destructive-foreground: #ffffff;
+  --border: var(--borda);
+  --input: var(--borda);
+  --ring: var(--azul);
+  --radius: 0.5rem;
+}
+
+@theme inline {
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-azul: var(--azul);
+  --color-azul-escuro: var(--azul-escuro);
+  --color-azul-claro: var(--azul-claro);
+  --color-borda: var(--borda);
+  --color-papel: var(--papel);
+  --color-papel-suave: var(--papel-suave);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  --font-leitura: Georgia, "Times New Roman", serif;
+  --font-interface: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/*
+  Escala de leitura (FR-17).
+  O tamanho base vive no <html> em px para que os rem de todo o site se
+  ajustem juntos. O padrão, 18px, é o piso de §7 — e o site também respeita
+  a escala do sistema operacional, porque todo o resto usa unidades relativas:
+  quem já configurou fonte grande no aparelho recebe o texto maior sem tocar
+  em nada.
+*/
+html {
+  font-size: 18px;
+  -webkit-text-size-adjust: 100%;
+}
+html[data-escala="1"] { font-size: 20px; }
+html[data-escala="2"] { font-size: 23px; }
+html[data-escala="3"] { font-size: 26px; }
+
+body {
+  font-family: var(--font-interface);
+  color: var(--color-tinta);
+  background: var(--color-papel);
+  line-height: 1.6;
+}
+
+/* Foco sempre visível — §7. */
+:focus-visible {
+  outline: 3px solid var(--color-azul);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
+  O corpo da Mensagem preserva as quebras de linha do texto original (FR-4):
+  o ritmo visual é conteúdo, não decoração.
+*/
+.texto-mensagem {
+  font-family: var(--font-leitura);
+  white-space: pre-wrap;
+  font-size: 1.06rem;
+  line-height: 1.75;
+}
+
+/* Nenhuma animação para quem pediu menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
