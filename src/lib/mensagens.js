@@ -17,6 +17,36 @@ const MESES = [
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ]
 
+/*
+  Linha que é inteiramente uma citação — FR-4.
+  Aceita aspas tipográficas e retas: o corpus tem os dois tipos, porque a fonte
+  varia (addendum §1.4). Uma detecção que só aceitasse aspas curvas perderia
+  mais da metade das citações.
+*/
+const CITACAO = /^\s*["“”].*["“”][.,;:!?)]*\s*$/
+
+/**
+ * Quebra o corpo em blocos de texto normal e blocos de citação, na ordem.
+ * Cada bloco guarda `inicio`/`fim` (índices de linha no corpo) — é o que
+ * permite à prévia do admin achar o bloco onde o cursor está digitando.
+ * Vive aqui (e não no componente Mensagem, que a renderiza) para o admin
+ * importar sem quebrar o fast refresh de arquivos de componente.
+ */
+export function emBlocos(corpo) {
+  const blocos = []
+  corpo.split('\n').forEach((linha, i) => {
+    const tipo = CITACAO.test(linha) && linha.trim().length > 1 ? 'citacao' : 'texto'
+    const ultimo = blocos.at(-1)
+    if (ultimo?.tipo === tipo) {
+      ultimo.linhas.push(linha)
+      ultimo.fim = i
+    } else {
+      blocos.push({ tipo, linhas: [linha], inicio: i, fim: i })
+    }
+  })
+  return blocos.filter((b) => b.linhas.join('\n').trim() !== '')
+}
+
 /** Data de hoje no fuso do Movimento, como AAAA-MM-DD. */
 export function hojeNoMovimento() {
   return new Intl.DateTimeFormat('en-CA', {

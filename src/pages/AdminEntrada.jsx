@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LogIn, LogOut, Music } from 'lucide-react'
+import { FileText, LogIn, LogOut, Music } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { apiEnviar } from '@/lib/api'
 import { ITENS_ADMIN } from '@/lib/navegacao'
@@ -94,6 +94,11 @@ function Entrada({ aoEntrar }) {
   )
 }
 
+const ICONES = {
+  '/admin/mensagem/nova': FileText,
+  '/admin/musica/nova': Music,
+}
+
 function Hub({ aoSair }) {
   return (
     <div className="mx-auto max-w-xl">
@@ -103,17 +108,20 @@ function Hub({ aoSair }) {
       </p>
 
       <ul className="mt-6 space-y-3">
-        {ITENS_ADMIN.map(({ para, rotulo }) => (
-          <li key={para}>
-            <NavLink
-              to={para}
-              className="flex min-h-14 items-center gap-3 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
-            >
-              <Music size={22} aria-hidden className="text-azul" />
-              {rotulo}
-            </NavLink>
-          </li>
-        ))}
+        {ITENS_ADMIN.map(({ para, rotulo }) => {
+          const Icone = ICONES[para] ?? FileText
+          return (
+            <li key={para}>
+              <NavLink
+                to={para}
+                className="flex min-h-14 items-center gap-3 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
+              >
+                <Icone size={22} aria-hidden className="text-azul" />
+                {rotulo}
+              </NavLink>
+            </li>
+          )
+        })}
       </ul>
 
       <Button variant="outline" className="mt-6 min-h-12 gap-2 px-5" onClick={aoSair}>

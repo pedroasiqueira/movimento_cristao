@@ -1,24 +1,4 @@
-import { porExtenso } from '@/lib/mensagens'
-
-/*
-  Linha que é inteiramente uma citação — FR-4.
-  Aceita aspas tipográficas e retas: o corpus tem os dois tipos, porque a fonte
-  varia (addendum §1.4). Uma detecção que só aceitasse aspas curvas perderia
-  mais da metade das citações.
-*/
-const CITACAO = /^\s*["“”].*["“”][.,;:!?)]*\s*$/
-
-/** Quebra o corpo em blocos de texto normal e blocos de citação, na ordem. */
-function emBlocos(corpo) {
-  const blocos = []
-  for (const linha of corpo.split('\n')) {
-    const tipo = CITACAO.test(linha) && linha.trim().length > 1 ? 'citacao' : 'texto'
-    const ultimo = blocos.at(-1)
-    if (ultimo?.tipo === tipo) ultimo.linhas.push(linha)
-    else blocos.push({ tipo, linhas: [linha] })
-  }
-  return blocos.filter((b) => b.linhas.join('\n').trim() !== '')
-}
+import { emBlocos, porExtenso } from '@/lib/mensagens'
 
 export default function Mensagem({ mensagem, comoTitulo: Titulo = 'h1' }) {
   const { titulo, data, corpo, assinatura, proveniencia, canal } = mensagem

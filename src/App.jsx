@@ -11,7 +11,9 @@ import MusicaPagina from '@/pages/MusicaPagina'
 import Encontros from '@/pages/Encontros'
 import Sobre from '@/pages/Sobre'
 import AdminEntrada from '@/pages/AdminEntrada'
+import AdminMensagemNova from '@/pages/AdminMensagemNova'
 import AdminMusicaNova from '@/pages/AdminMusicaNova'
+import { ITENS_ADMIN } from '@/lib/navegacao'
 
 export default function App() {
   // A faixa do topo está fora de vista? Sinal único, medido no Cabecalho e
@@ -68,60 +70,103 @@ export default function App() {
         aoSairAdmin={sairAdmin}
       />
 
-      {/* Desktop: menu lateral fixo + coluna de conteúdo. Celular: só a coluna,
-          com o menu no Cabecalho acima. A folha branca carrega o texto; o céu
-          vive em volta. Sem items-start: o aside precisa esticar até a altura
-          da coluna de conteúdo, senão o sticky do menu não tem onde viajar. */}
-      <div className="mx-auto w-full max-w-[88rem] lg:flex lg:gap-8 lg:px-8 lg:pt-8">
-        <MenuLateral mostrarTitulo={cabecalhoFora} admin={admin} aoSairAdmin={sairAdmin} />
-
-        <div className="min-w-0 flex-1">
-          <div className="px-3 sm:px-6 lg:px-0">
-            <main
-              id="conteudo"
-              className="mx-auto my-6 w-full max-w-5xl rounded-2xl border border-borda bg-papel px-4 py-8 shadow-sm sm:px-8 lg:mt-0"
-            >
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/acervo" element={<Acervo />} />
-                <Route path="/mensagem/:data" element={<MensagemPagina />} />
-                <Route path="/musicas" element={<Musicas />} />
-                <Route path="/musica/:id" element={<MusicaPagina />} />
-                <Route path="/encontros" element={<Encontros />} />
-                <Route
-                  path="/admin"
-                  element={<AdminEntrada admin={admin} aoEntrar={entrarAdmin} aoSair={sairAdmin} />}
-                />
-                {/* Guarda visual; a proteção real é a API exigir o token. */}
-                <Route
-                  path="/admin/musica/nova"
-                  element={
-                    admin ? (
-                      <AdminMusicaNova token={tokenAdmin} />
-                    ) : (
-                      <Navigate to="/admin" replace />
-                    )
-                  }
-                />
-                <Route path="/sobre" element={<Sobre />} />
-                <Route path="*" element={<NaoEncontrada />} />
-              </Routes>
-            </main>
-          </div>
-
-          {/* Rodapé direto sobre o céu, alinhado à coluna de conteúdo. */}
-          <footer className="pt-2 pb-10">
-            <div className="mx-auto max-w-5xl space-y-5 px-4 sm:px-6">
-              {/* Caminho de contato visível também no rodapé — FR-19 */}
-              <Contato />
-              <p className="text-sm text-tinta-suave">
-                Arca da Sagrada Aliança – Movimento Cristão · Natal/RN, Brasil
-              </p>
-            </div>
-          </footer>
-        </div>
-      </div>
+      <Estrutura
+        cabecalhoFora={cabecalhoFora}
+        admin={admin}
+        tokenAdmin={tokenAdmin}
+        entrarAdmin={entrarAdmin}
+        sairAdmin={sairAdmin}
+      />
     </BrowserRouter>
+  )
+}
+
+/* A moldura precisa saber a rota (useLocation só existe sob o BrowserRouter):
+   nas telas de cadastro do admin o menu lateral começa recolhido e a folha
+   branca ganha a largura — escrever e conferir a prévia pedem espaço. O
+   administrador pode reabrir; a escolha dura até trocar de página. */
+function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin }) {
+  const { pathname } = useLocation()
+  const telaDeCadastro = ITENS_ADMIN.some((item) => item.para === pathname)
+  const [menuReaberto, setMenuReaberto] = useState(false)
+  useEffect(() => setMenuReaberto(false), [pathname])
+  const menuRecolhido = telaDeCadastro && !menuReaberto
+
+  /* Desktop: menu lateral fixo + coluna de conteúdo. Celular: só a coluna,
+     com o menu no Cabecalho acima. A folha branca carrega o texto; o céu
+     vive em volta. Sem items-start: o aside precisa esticar até a altura
+     da coluna de conteúdo, senão o sticky do menu não tem onde viajar. */
+  return (
+    <div className="mx-auto w-full max-w-[88rem] lg:flex lg:gap-8 lg:px-8 lg:pt-8">
+      <MenuLateral
+        mostrarTitulo={cabecalhoFora}
+        admin={admin}
+        aoSairAdmin={sairAdmin}
+        recolhido={menuRecolhido}
+        aoAlternar={telaDeCadastro ? () => setMenuReaberto((estava) => !estava) : undefined}
+      />
+
+      <div className="min-w-0 flex-1">
+        <div className="px-3 sm:px-6 lg:px-0">
+          <main
+            id="conteudo"
+            className={
+              'mx-auto my-6 w-full rounded-2xl border border-borda bg-papel px-4 py-8 shadow-sm transition-[max-width] duration-300 ease-out sm:px-8 lg:mt-0 ' +
+              (menuRecolhido ? 'max-w-[88rem]' : 'max-w-5xl')
+            }
+          >
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/acervo" element={<Acervo />} />
+              <Route path="/mensagem/:data" element={<MensagemPagina />} />
+              <Route path="/musicas" element={<Musicas />} />
+              <Route path="/musica/:id" element={<MusicaPagina />} />
+              <Route path="/encontros" element={<Encontros />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminEntrada admin={admin} aoEntrar={entrarAdmin} aoSair={sairAdmin} />
+                }
+              />
+              {/* Guarda visual; a proteção real é a API exigir o token. */}
+              <Route
+                path="/admin/mensagem/nova"
+                element={
+                  admin ? (
+                    <AdminMensagemNova token={tokenAdmin} />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
+                }
+              />
+              <Route
+                path="/admin/musica/nova"
+                element={
+                  admin ? (
+                    <AdminMusicaNova token={tokenAdmin} />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
+                }
+              />
+              <Route path="/sobre" element={<Sobre />} />
+              <Route path="*" element={<NaoEncontrada />} />
+            </Routes>
+          </main>
+        </div>
+
+        {/* Rodapé direto sobre o céu, alinhado à coluna de conteúdo. */}
+        <footer className="pt-2 pb-10">
+          <div className="mx-auto max-w-5xl space-y-5 px-4 sm:px-6">
+            {/* Caminho de contato visível também no rodapé — FR-19 */}
+            <Contato />
+            <p className="text-sm text-tinta-suave">
+              Arca da Sagrada Aliança – Movimento Cristão · Natal/RN, Brasil
+            </p>
+          </div>
+        </footer>
+      </div>
+    </div>
   )
 }
 
