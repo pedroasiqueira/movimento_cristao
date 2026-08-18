@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, CalendarDays, Music } from 'lucide-react'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
+import TextoFormatado from '@/components/TextoFormatado'
 import { acervo, destaqueDaHome, porExtenso } from '@/lib/mensagens'
 import { proximosEncontros } from '@/lib/encontros'
 import { useTitulo } from '@/hooks/useTitulo'
@@ -66,17 +67,31 @@ function Aviso({ situacao, data, diasAtras }) {
   )
 }
 
-/** Corta o corpo em ~40% das palavras, sempre em fim de linha. */
+/**
+ * Corta o corpo em ~40% das palavras. O corte atravessa a linha quando
+ * preciso: as citações do corpus são uma linha única e longa, e cortar só
+ * em fim de linha fazia a prévia chegar a 75% do texto. Marcas do WhatsApp
+ * abertas no ponto do corte são fechadas para não sobrar `*`/`_` solto.
+ */
 function previa(corpo, fracao = 0.4) {
-  const linhas = corpo.split('\n')
   const totalPalavras = corpo.split(/\s+/).filter(Boolean).length
   const alvo = Math.max(60, Math.round(totalPalavras * fracao))
   const saida = []
   let contadas = 0
-  for (const linha of linhas) {
-    saida.push(linha)
-    contadas += linha.split(/\s+/).filter(Boolean).length
-    if (contadas >= alvo) break
+  for (const linha of corpo.split('\n')) {
+    const palavras = linha.split(/\s+/).filter(Boolean)
+    if (contadas + palavras.length <= alvo) {
+      saida.push(linha)
+      contadas += palavras.length
+      if (contadas === alvo) break
+    } else {
+      let parcial = palavras.slice(0, alvo - contadas).join(' ')
+      for (const marca of ['*', '_']) {
+        if ((parcial.split(marca).length - 1) % 2 === 1) parcial += marca
+      }
+      saida.push(parcial + '…')
+      break
+    }
   }
   return saida.join('\n')
 }
@@ -97,7 +112,9 @@ function PreviaDaMensagem({ mensagem }) {
       </header>
 
       {/* ~40% do texto, esvanecendo — a leitura inteira mora na página própria (FR-3). */}
-      <div className="previa-fade texto-mensagem">{previa(corpo)}</div>
+      <div className="previa-fade texto-mensagem">
+        <TextoFormatado texto={previa(corpo)} />
+      </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <Link

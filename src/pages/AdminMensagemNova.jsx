@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Bold, Check, Italic, Plus, Quote } from 'lucide-react'
+import { ArrowLeft, Bold, Check, ClipboardPaste, Italic, Plus, Quote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Mensagem from '@/components/Mensagem'
 import { apiEnviar } from '@/lib/api'
 import {
+  CITACAO,
   buscarPorData,
   carregarMensagens,
   emBlocos,
@@ -12,6 +13,7 @@ import {
   porExtenso,
   tagsEmUso,
 } from '@/lib/mensagens'
+import { interpretarMensagem } from '@/lib/interpretarMensagem'
 import { useTitulo } from '@/hooks/useTitulo'
 
 /**
@@ -37,6 +39,12 @@ export default function AdminMensagemNova({ token }) {
   const [salvando, setSalvando] = useState(false)
   const [salva, setSalva] = useState(null)
 
+  // Duas portas de entrada: campos individuais ou a mensagem colada inteira.
+  const [entrada, setEntrada] = useState('campos')
+  const [textoColado, setTextoColado] = useState('')
+  const [avisosColada, setAvisosColada] = useState([])
+  const [colada, setColada] = useState(false)
+
   const emUso = useMemo(tagsEmUso, [])
 
   // A prévia (fixa na tela, com rolagem própria) acompanha o campo em
@@ -50,14 +58,15 @@ export default function AdminMensagemNova({ token }) {
   useEffect(() => {
     const caixa = previaRef.current
     if (!caixa || !campoAtivo) return
-    const rolarAte = (topo) =>
-      caixa.scrollTo({ top: Math.max(0, topo), behavior: 'smooth' })
+    const rolarAte = (topo) => caixa.scrollTo({ top: Math.max(0, topo), behavior: 'smooth' })
 
     if (campoAtivo === 'proveniencia' || campoAtivo === 'canal') {
       const alvo = caixa.querySelector('footer')
       if (!alvo) return
       const fundo =
-        alvo.getBoundingClientRect().bottom - caixa.getBoundingClientRect().top + caixa.scrollTop
+        alvo.getBoundingClientRect().bottom -
+        caixa.getBoundingClientRect().top +
+        caixa.scrollTop
       rolarAte(fundo - caixa.clientHeight + 16)
       return
     }
@@ -74,9 +83,7 @@ export default function AdminMensagemNova({ token }) {
     if (!areaCorpo) return
     const limpo = corpo.replace(/^\n+|\s+$/g, '')
     const cortado = corpo.length - corpo.replace(/^\n+/, '').length
-    const linha = limpo
-      .slice(0, Math.max(0, cursorCorpo - cortado))
-      .split('\n').length - 1
+    const linha = limpo.slice(0, Math.max(0, cursorCorpo - cortado)).split('\n').length - 1
     const blocos = emBlocos(limpo)
     if (blocos.length === 0) return
     let indice = blocos.findLastIndex((b) => linha >= b.inicio)
@@ -89,7 +96,8 @@ export default function AdminMensagemNova({ token }) {
         ? Math.min(1, (linha - bloco.inicio) / (bloco.fim - bloco.inicio))
         : 0
     const r = alvo.getBoundingClientRect()
-    const ponto = r.top - caixa.getBoundingClientRect().top + caixa.scrollTop + fracao * r.height
+    const ponto =
+      r.top - caixa.getBoundingClientRect().top + caixa.scrollTop + fracao * r.height
     // Ponto do cursor no meio do painel: dá contexto acima e abaixo.
     rolarAte(ponto - caixa.clientHeight / 2)
   }, [campoAtivo, cursorCorpo, titulo, data, assinatura, corpo, proveniencia, canal])
@@ -145,11 +153,14 @@ export default function AdminMensagemNova({ token }) {
     const quebra = corpo.indexOf('\n', area.selectionEnd)
     const fim = quebra === -1 ? corpo.length : quebra
     const linhas = corpo.slice(ini, fim).split('\n')
-    const todasCitadas = linhas.every((l) => !l.trim() || /^\s*".*"\s*$/.test(l))
+    // Mesmo critério do site (CITACAO): aspas retas ou tipográficas, com ou
+    // sem marcas do WhatsApp envolvendo a linha.
+    const todasCitadas = linhas.every((l) => !l.trim() || CITACAO.test(l))
     const trecho = linhas
       .map((l) => {
         if (!l.trim()) return l
-        if (todasCitadas) return l.replace(/^(\s*)"(.*)"(\s*)$/, '$1$2$3')
+        if (todasCitadas)
+          return l.replace(/^(\s*[_*]*\s*)["“](.*)["”]([.,;:!?)]*[_*]*\s*)$/, '$1$2$3')
         return l.replace(/^(\s*)(.*?)(\s*)$/, '$1"$2"$3')
       })
       .join('\n')
@@ -173,8 +184,7 @@ export default function AdminMensagemNova({ token }) {
     e.preventDefault()
     const encontrados = {}
     if (!data) encontrados.data = 'Escolha o dia da mensagem.'
-    else if (buscarPorData(data))
-      encontrados.data = 'Já existe uma mensagem nesse dia.'
+    else if (buscarPorData(data)) encontrados.data = 'Já existe uma mensagem nesse dia.'
     if (!titulo.trim()) encontrados.titulo = 'A mensagem precisa de um título.'
     if (!corpo.trim()) encontrados.corpo = 'A mensagem precisa do texto.'
     if (momento === 'programar' && !quando)
@@ -239,6 +249,31 @@ export default function AdminMensagemNova({ token }) {
     setQuando('')
     setErros({})
     setSalva(null)
+    setTextoColado('')
+    setAvisosColada([])
+    setColada(false)
+  }
+
+  /**
+   * Modo "colar mensagem pronta" — pedido do Pedro (17/08/2026): a mensagem
+   * inteira (formato do WhatsApp ou o original em Markdown) é interpretada
+   * e os campos existentes são preenchidos para revisão; tags e "Quando
+   * publicar" seguem manuais, e validação/prévia/envio são os de sempre.
+   */
+  function aplicarColada(texto) {
+    if (!texto.trim()) return
+    const lida = interpretarMensagem(texto)
+    setTitulo(lida.titulo)
+    setCorpo(lida.corpo)
+    setAssinatura(lida.assinatura ?? '')
+    setProveniencia(lida.proveniencia ?? '')
+    setCanal(lida.canal ?? '')
+    if (lida.data) setData(lida.data)
+    setAvisosColada(lida.avisos)
+    setColada(true)
+    setEntrada('campos')
+    setErros({})
+    window.scrollTo(0, 0)
   }
 
   if (salva) return <Sucesso mensagem={salva} aoRecomecar={recomecar} />
@@ -262,308 +297,397 @@ export default function AdminMensagemNova({ token }) {
         Cole ou escreva o texto e acompanhe na prévia como a página vai ficar.
       </p>
 
-      <form onSubmit={salvar} noValidate className="mt-6 grid gap-8 lg:grid-cols-2">
-        <div className="space-y-5">
-          {/* Os campos seguem a ordem em que a página exibe a mensagem:
+      {/* Duas formas de entrada; a colada preenche estes mesmos campos. */}
+      <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Forma de cadastro">
+        <Button
+          type="button"
+          variant={entrada === 'campos' ? 'default' : 'outline'}
+          className="min-h-12 px-5"
+          aria-pressed={entrada === 'campos'}
+          onClick={() => setEntrada('campos')}
+        >
+          Preencher os campos
+        </Button>
+        <Button
+          type="button"
+          variant={entrada === 'colar' ? 'default' : 'outline'}
+          className="min-h-12 gap-2 px-5"
+          aria-pressed={entrada === 'colar'}
+          onClick={() => setEntrada('colar')}
+        >
+          <ClipboardPaste aria-hidden />
+          Colar mensagem pronta
+        </Button>
+      </div>
+
+      {entrada === 'colar' && (
+        <div className="mt-6 max-w-3xl">
+          <label htmlFor="mensagem-colada" className="mb-1.5 block font-medium text-tinta">
+            Mensagem completa
+          </label>
+          <p className="mt-1 mb-1.5 text-sm text-tinta-suave">
+            Cole a mensagem como ela circula no WhatsApp (ou no formato original). Título,
+            assinatura, corpo e rodapés são reconhecidos e vão para os campos, para você revisar
+            antes de publicar.
+          </p>
+          <textarea
+            id="mensagem-colada"
+            rows={16}
+            value={textoColado}
+            onChange={(e) => setTextoColado(e.target.value)}
+            onPaste={(e) => {
+              const texto = e.clipboardData.getData('text')
+              if (texto.trim()) {
+                e.preventDefault()
+                setTextoColado(texto)
+                aplicarColada(texto)
+              }
+            }}
+            className="w-full rounded-lg border border-borda bg-papel px-4 py-3 leading-relaxed text-tinta focus:border-azul"
+          />
+          <Button
+            type="button"
+            className="mt-3 min-h-12 px-6"
+            onClick={() => aplicarColada(textoColado)}
+          >
+            Preencher os campos com esta mensagem
+          </Button>
+        </div>
+      )}
+
+      {entrada === 'campos' && colada && (
+        <div className="mt-6 rounded-lg border border-azul bg-azul-claro px-4 py-3">
+          <p className="font-medium text-azul-escuro">
+            Campos preenchidos a partir da mensagem colada — revise, escolha os assuntos e
+            publique.
+          </p>
+          {avisosColada.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-tinta">
+              {avisosColada.map((aviso) => (
+                <li key={aviso}>{aviso}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {entrada === 'campos' && (
+        <form onSubmit={salvar} noValidate className="mt-6 grid gap-8 lg:grid-cols-2">
+          <div className="space-y-5">
+            {/* Os campos seguem a ordem em que a página exibe a mensagem:
               título, data, assinatura, corpo, proveniência, canal —
               pedido do Pedro (17/08/2026). */}
-          <div>
-            <label htmlFor="mensagem-titulo" className="mb-1.5 block font-medium text-tinta">
-              Título
-            </label>
-            <input
-              id="mensagem-titulo"
-              onFocus={() => setCampoAtivo('titulo')}
-              type="text"
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
-            />
-            {erros.titulo && (
-              <p className="mt-1.5 text-sm font-medium text-destructive">{erros.titulo}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="mensagem-data" className="mb-1.5 block font-medium text-tinta">
-              Dia da mensagem
-            </label>
-            <input
-              id="mensagem-data"
-              onFocus={() => setCampoAtivo('data')}
-              type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value)}
-              className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
-            />
-            {erros.data && (
-              <p className="mt-1.5 text-sm font-medium text-destructive">{erros.data}</p>
-            )}
-            {/* FR-3: o dia é o endereço permanente da mensagem. */}
-            {data && (
-              <p className="mt-1.5 text-sm text-tinta-suave">
-                Endereço: <span className="font-medium text-tinta">/mensagem/{data}</span>
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="mensagem-assinatura" className="mb-1.5 block font-medium text-tinta">
-              Assinatura <span className="font-normal text-tinta-suave">(opcional)</span>
-            </label>
-            <input
-              id="mensagem-assinatura"
-              onFocus={() => setCampoAtivo('assinatura')}
-              type="text"
-              value={assinatura}
-              onChange={(e) => setAssinatura(e.target.value)}
-              className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="mensagem-corpo" className="mb-1.5 block font-medium text-tinta">
-              Texto da mensagem
-            </label>
-            <p className="mt-1 mb-1.5 text-sm text-tinta-suave">
-              As quebras de linha ficam como no original. Linha inteira entre
-              aspas vira citação destacada, e as marcas do WhatsApp valem
-              aqui: *negrito* e _itálico_ — colar de lá já traz a formatação.
-            </p>
-            <div className="mb-2 flex gap-2" role="group" aria-label="Formatação do texto">
-              <Button
-                type="button"
-                variant="outline"
-                className="size-12 [&_svg]:size-5"
-                aria-label="Negrito"
-                title="Negrito"
-                onClick={() => aplicarMarca('*')}
-              >
-                <Bold aria-hidden />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="size-12 [&_svg]:size-5"
-                aria-label="Itálico"
-                title="Itálico"
-                onClick={() => aplicarMarca('_')}
-              >
-                <Italic aria-hidden />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="size-12 [&_svg]:size-5"
-                aria-label="Citação"
-                title="Citação — linha inteira entre aspas"
-                onClick={alternarCitacao}
-              >
-                <Quote aria-hidden />
-              </Button>
-            </div>
-            <textarea
-              id="mensagem-corpo"
-              ref={corpoRef}
-              onFocus={() => setCampoAtivo('corpo')}
-              rows={14}
-              value={corpo}
-              onChange={(e) => {
-                setCorpo(e.target.value)
-                setCursorCorpo(e.target.selectionStart)
-              }}
-              // onSelect também dispara em clique e setas: mover o cursor
-              // sem digitar já leva a prévia ao trecho correspondente.
-              onSelect={(e) => setCursorCorpo(e.target.selectionStart)}
-              className="w-full rounded-lg border border-borda bg-papel px-4 py-3 leading-relaxed text-tinta focus:border-azul"
-            />
-            {erros.corpo && (
-              <p className="mt-1.5 text-sm font-medium text-destructive">{erros.corpo}</p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="mensagem-proveniencia"
-              className="mb-1.5 block font-medium text-tinta"
-            >
-              Nota de proveniência <span className="font-normal text-tinta-suave">(opcional)</span>
-            </label>
-            <input
-              id="mensagem-proveniencia"
-              onFocus={() => setCampoAtivo('proveniencia')}
-              type="text"
-              value={proveniencia}
-              onChange={(e) => setProveniencia(e.target.value)}
-              className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="mensagem-canal" className="mb-1.5 block font-medium text-tinta">
-              Declaração de canal <span className="font-normal text-tinta-suave">(opcional)</span>
-            </label>
-            <input
-              id="mensagem-canal"
-              onFocus={() => setCampoAtivo('canal')}
-              type="text"
-              value={canal}
-              onChange={(e) => setCanal(e.target.value)}
-              className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
-            />
-          </div>
-
-          <div>
-            <p className="font-medium text-tinta">Assuntos (tags)</p>
-            {/* FR-6: as já usadas vêm primeiro, para reaproveitar em vez de variar. */}
-            {emUso.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Tags já usadas">
-                {emUso.map(({ tag }) => (
-                  <Button
-                    key={tag}
-                    type="button"
-                    variant={tags.includes(tag) ? 'default' : 'secondary'}
-                    className="min-h-12 px-4"
-                    aria-pressed={tags.includes(tag)}
-                    onClick={() => alternarTag(tag)}
-                  >
-                    {tag}
-                  </Button>
-                ))}
-              </div>
-            )}
-            <div className="mt-3 flex gap-2">
+            <div>
+              <label htmlFor="mensagem-titulo" className="mb-1.5 block font-medium text-tinta">
+                Título
+              </label>
               <input
+                id="mensagem-titulo"
+                onFocus={() => setCampoAtivo('titulo')}
                 type="text"
-                value={novaTag}
-                onChange={(e) => setNovaTag(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    adicionarNovaTag()
-                  }
-                }}
-                placeholder="Novo assunto…"
-                aria-label="Novo assunto"
-                className="h-12 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta placeholder:text-tinta-suave focus:border-azul"
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+                className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
               />
-              <Button
-                type="button"
-                variant="secondary"
-                className="min-h-12 gap-1.5 px-4"
-                onClick={adicionarNovaTag}
-              >
-                <Plus aria-hidden />
-                Adicionar
-              </Button>
+              {erros.titulo && (
+                <p className="mt-1.5 text-sm font-medium text-destructive">{erros.titulo}</p>
+              )}
             </div>
-            {tags.filter((t) => !emUso.some((u) => u.tag === t)).length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {tags
-                  .filter((t) => !emUso.some((u) => u.tag === t))
-                  .map((tag) => (
+
+            <div>
+              <label htmlFor="mensagem-data" className="mb-1.5 block font-medium text-tinta">
+                Dia da mensagem
+              </label>
+              <input
+                id="mensagem-data"
+                onFocus={() => setCampoAtivo('data')}
+                type="date"
+                value={data}
+                onChange={(e) => setData(e.target.value)}
+                className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+              />
+              {erros.data && (
+                <p className="mt-1.5 text-sm font-medium text-destructive">{erros.data}</p>
+              )}
+              {/* FR-3: o dia é o endereço permanente da mensagem. */}
+              {data && (
+                <p className="mt-1.5 text-sm text-tinta-suave">
+                  Endereço: <span className="font-medium text-tinta">/mensagem/{data}</span>
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="mensagem-assinatura"
+                className="mb-1.5 block font-medium text-tinta"
+              >
+                Assinatura <span className="font-normal text-tinta-suave">(opcional)</span>
+              </label>
+              <input
+                id="mensagem-assinatura"
+                onFocus={() => setCampoAtivo('assinatura')}
+                type="text"
+                value={assinatura}
+                onChange={(e) => setAssinatura(e.target.value)}
+                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="mensagem-corpo" className="mb-1.5 block font-medium text-tinta">
+                Texto da mensagem
+              </label>
+              <p className="mt-1 mb-1.5 text-sm text-tinta-suave">
+                As quebras de linha ficam como no original. Linha inteira entre aspas vira
+                citação destacada, e as marcas do WhatsApp valem aqui: *negrito* e _itálico_ —
+                colar de lá já traz a formatação.
+              </p>
+              <div className="mb-2 flex gap-2" role="group" aria-label="Formatação do texto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="size-12 [&_svg]:size-5"
+                  aria-label="Negrito"
+                  title="Negrito"
+                  onClick={() => aplicarMarca('*')}
+                >
+                  <Bold aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="size-12 [&_svg]:size-5"
+                  aria-label="Itálico"
+                  title="Itálico"
+                  onClick={() => aplicarMarca('_')}
+                >
+                  <Italic aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="size-12 [&_svg]:size-5"
+                  aria-label="Citação"
+                  title="Citação — linha inteira entre aspas"
+                  onClick={alternarCitacao}
+                >
+                  <Quote aria-hidden />
+                </Button>
+              </div>
+              <textarea
+                id="mensagem-corpo"
+                ref={corpoRef}
+                onFocus={() => setCampoAtivo('corpo')}
+                rows={14}
+                value={corpo}
+                onChange={(e) => {
+                  setCorpo(e.target.value)
+                  setCursorCorpo(e.target.selectionStart)
+                }}
+                // onSelect também dispara em clique e setas: mover o cursor
+                // sem digitar já leva a prévia ao trecho correspondente.
+                onSelect={(e) => setCursorCorpo(e.target.selectionStart)}
+                className="w-full rounded-lg border border-borda bg-papel px-4 py-3 leading-relaxed text-tinta focus:border-azul"
+              />
+              {erros.corpo && (
+                <p className="mt-1.5 text-sm font-medium text-destructive">{erros.corpo}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="mensagem-proveniencia"
+                className="mb-1.5 block font-medium text-tinta"
+              >
+                Nota de proveniência{' '}
+                <span className="font-normal text-tinta-suave">(opcional)</span>
+              </label>
+              <input
+                id="mensagem-proveniencia"
+                onFocus={() => setCampoAtivo('proveniencia')}
+                type="text"
+                value={proveniencia}
+                onChange={(e) => setProveniencia(e.target.value)}
+                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="mensagem-canal" className="mb-1.5 block font-medium text-tinta">
+                Declaração de canal{' '}
+                <span className="font-normal text-tinta-suave">(opcional)</span>
+              </label>
+              <input
+                id="mensagem-canal"
+                onFocus={() => setCampoAtivo('canal')}
+                type="text"
+                value={canal}
+                onChange={(e) => setCanal(e.target.value)}
+                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+              />
+            </div>
+
+            <div>
+              <p className="font-medium text-tinta">Assuntos (tags)</p>
+              {/* FR-6: as já usadas vêm primeiro, para reaproveitar em vez de variar. */}
+              {emUso.length > 0 && (
+                <div
+                  className="mt-2 flex flex-wrap gap-2"
+                  role="group"
+                  aria-label="Tags já usadas"
+                >
+                  {emUso.map(({ tag }) => (
                     <Button
                       key={tag}
                       type="button"
-                      variant="default"
+                      variant={tags.includes(tag) ? 'default' : 'secondary'}
                       className="min-h-12 px-4"
-                      aria-pressed
+                      aria-pressed={tags.includes(tag)}
                       onClick={() => alternarTag(tag)}
                     >
                       {tag}
                     </Button>
                   ))}
+                </div>
+              )}
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={novaTag}
+                  onChange={(e) => setNovaTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      adicionarNovaTag()
+                    }
+                  }}
+                  placeholder="Novo assunto…"
+                  aria-label="Novo assunto"
+                  className="h-12 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta placeholder:text-tinta-suave focus:border-azul"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-h-12 gap-1.5 px-4"
+                  onClick={adicionarNovaTag}
+                >
+                  <Plus aria-hidden />
+                  Adicionar
+                </Button>
               </div>
-            )}
-          </div>
-
-          <fieldset>
-            <legend className="font-medium text-tinta">Quando publicar</legend>
-            <div className="mt-2 space-y-2">
-              <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
-                <input
-                  type="radio"
-                  name="momento"
-                  checked={momento === 'agora'}
-                  onChange={() => setMomento('agora')}
-                  className="size-5 accent-azul"
-                />
-                <span className="text-tinta">Publicar agora</span>
-              </label>
-              <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
-                <input
-                  type="radio"
-                  name="momento"
-                  checked={momento === 'programar'}
-                  onChange={() => setMomento('programar')}
-                  className="size-5 accent-azul"
-                />
-                <span className="text-tinta">Programar para</span>
-              </label>
-              {momento === 'programar' && (
-                <div className="pl-1">
-                  <input
-                    type="datetime-local"
-                    value={quando}
-                    onChange={(e) => setQuando(e.target.value)}
-                    aria-label="Data e hora da publicação"
-                    className="h-14 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
-                  />
-                  <p className="mt-1.5 text-sm text-tinta-suave">
-                    Horário do fuso do Movimento (Natal). Até lá, a mensagem
-                    fica fora do site.
-                  </p>
-                  {erros.quando && (
-                    <p className="mt-1.5 text-sm font-medium text-destructive">{erros.quando}</p>
-                  )}
+              {tags.filter((t) => !emUso.some((u) => u.tag === t)).length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {tags
+                    .filter((t) => !emUso.some((u) => u.tag === t))
+                    .map((tag) => (
+                      <Button
+                        key={tag}
+                        type="button"
+                        variant="default"
+                        className="min-h-12 px-4"
+                        aria-pressed
+                        onClick={() => alternarTag(tag)}
+                      >
+                        {tag}
+                      </Button>
+                    ))}
                 </div>
               )}
             </div>
-          </fieldset>
 
-          {erros.api && (
-            <p role="alert" className="text-sm font-medium text-destructive">
-              {erros.api}
+            <fieldset>
+              <legend className="font-medium text-tinta">Quando publicar</legend>
+              <div className="mt-2 space-y-2">
+                <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
+                  <input
+                    type="radio"
+                    name="momento"
+                    checked={momento === 'agora'}
+                    onChange={() => setMomento('agora')}
+                    className="size-5 accent-azul"
+                  />
+                  <span className="text-tinta">Publicar agora</span>
+                </label>
+                <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
+                  <input
+                    type="radio"
+                    name="momento"
+                    checked={momento === 'programar'}
+                    onChange={() => setMomento('programar')}
+                    className="size-5 accent-azul"
+                  />
+                  <span className="text-tinta">Programar para</span>
+                </label>
+                {momento === 'programar' && (
+                  <div className="pl-1">
+                    <input
+                      type="datetime-local"
+                      value={quando}
+                      onChange={(e) => setQuando(e.target.value)}
+                      aria-label="Data e hora da publicação"
+                      className="h-14 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                    />
+                    <p className="mt-1.5 text-sm text-tinta-suave">
+                      Horário do fuso do Movimento (Natal). Até lá, a mensagem fica fora do
+                      site.
+                    </p>
+                    {erros.quando && (
+                      <p className="mt-1.5 text-sm font-medium text-destructive">
+                        {erros.quando}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </fieldset>
+
+            {erros.api && (
+              <p role="alert" className="text-sm font-medium text-destructive">
+                {erros.api}
+              </p>
+            )}
+
+            <Button type="submit" disabled={salvando} className="min-h-12 px-6">
+              {salvando
+                ? 'Salvando…'
+                : momento === 'programar'
+                  ? 'Programar mensagem'
+                  : 'Publicar mensagem'}
+            </Button>
+          </div>
+
+          {/* Prévia viva com o componente real da página da Mensagem — FR-4. */}
+          <div
+            ref={previaRef}
+            className="rounded-lg border border-borda bg-papel-suave p-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto lg:p-6"
+          >
+            <p className="text-sm font-semibold tracking-wide text-azul-escuro uppercase">
+              Prévia
             </p>
-          )}
-
-          <Button type="submit" disabled={salvando} className="min-h-12 px-6">
-            {salvando
-              ? 'Salvando…'
-              : momento === 'programar'
-                ? 'Programar mensagem'
-                : 'Publicar mensagem'}
-          </Button>
-        </div>
-
-        {/* Prévia viva com o componente real da página da Mensagem — FR-4. */}
-        <div
-          ref={previaRef}
-          className="rounded-lg border border-borda bg-papel-suave p-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto lg:p-6"
-        >
-          <p className="text-sm font-semibold tracking-wide text-azul-escuro uppercase">Prévia</p>
-          {temPrevia ? (
-            <div className="mt-3">
-              <Mensagem
-                comoTitulo="h2"
-                mensagem={{
-                  data,
-                  titulo: titulo.trim() || 'Sem título',
-                  corpo: corpo.replace(/^\n+|\s+$/g, ''),
-                  assinatura: assinatura.trim() || null,
-                  proveniencia: proveniencia.trim() || null,
-                  canal: canal.trim() || null,
-                  tags,
-                }}
-              />
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-tinta-suave">
-              A mensagem aparece aqui conforme você escreve.
-            </p>
-          )}
-        </div>
-      </form>
+            {temPrevia ? (
+              <div className="mt-3">
+                <Mensagem
+                  comoTitulo="h2"
+                  mensagem={{
+                    data,
+                    titulo: titulo.trim() || 'Sem título',
+                    corpo: corpo.replace(/^\n+|\s+$/g, ''),
+                    assinatura: assinatura.trim() || null,
+                    proveniencia: proveniencia.trim() || null,
+                    canal: canal.trim() || null,
+                    tags,
+                  }}
+                />
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-tinta-suave">
+                A mensagem aparece aqui conforme você escreve.
+              </p>
+            )}
+          </div>
+        </form>
+      )}
     </>
   )
 }

@@ -21,9 +21,11 @@ const MESES = [
   Linha que é inteiramente uma citação — FR-4.
   Aceita aspas tipográficas e retas: o corpus tem os dois tipos, porque a fonte
   varia (addendum §1.4). Uma detecção que só aceitasse aspas curvas perderia
-  mais da metade das citações.
+  mais da metade das citações. As marcas do WhatsApp podem envolver a linha
+  (o corpus real cita em itálico: `_“…”_`) — toleradas nas duas pontas.
+  Exportada para o formulário admin usar o MESMO critério no botão de citação.
 */
-const CITACAO = /^\s*["“”].*["“”][.,;:!?)]*\s*$/
+export const CITACAO = /^\s*[_*]*\s*["“”].*["“”][.,;:!?)]*[_*]*\s*$/
 
 /**
  * Quebra o corpo em blocos de texto normal e blocos de citação, na ordem.
