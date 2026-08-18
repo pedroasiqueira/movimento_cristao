@@ -39,8 +39,9 @@ export default function AdminMensagemNova({ token }) {
   const [salvando, setSalvando] = useState(false)
   const [salva, setSalva] = useState(null)
 
-  // Duas portas de entrada: campos individuais ou a mensagem colada inteira.
-  const [entrada, setEntrada] = useState('campos')
+  // Duas portas de entrada: a mensagem colada inteira (a principal — a
+  // tela sempre abre nela, decisão do Pedro 18/08/2026) ou os campos.
+  const [entrada, setEntrada] = useState('colar')
   const [textoColado, setTextoColado] = useState('')
   const [avisosColada, setAvisosColada] = useState([])
   const [colada, setColada] = useState(false)
@@ -252,6 +253,7 @@ export default function AdminMensagemNova({ token }) {
     setTextoColado('')
     setAvisosColada([])
     setColada(false)
+    setEntrada('colar')
   }
 
   /**
