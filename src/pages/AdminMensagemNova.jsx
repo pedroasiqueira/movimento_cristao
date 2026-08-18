@@ -14,6 +14,7 @@ import {
   tagsEmUso,
 } from '@/lib/mensagens'
 import { interpretarMensagem } from '@/lib/interpretarMensagem'
+import { multiplicadorInicial } from '@/lib/leitura'
 import { useTitulo } from '@/hooks/useTitulo'
 
 /**
@@ -683,7 +684,7 @@ export default function AdminMensagemNova({ token }) {
               Prévia
             </p>
             {temPrevia ? (
-              <div className="mt-3">
+              <div className="mt-3" style={{ fontSize: `${multiplicadorInicial()}em` }}>
                 <Mensagem
                   comoTitulo="h2"
                   mensagem={{

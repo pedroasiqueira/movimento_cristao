@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, CalendarDays, Music } from 'lucide-react'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import TextoFormatado from '@/components/TextoFormatado'
 import { acervo, destaqueDaHome, porExtenso } from '@/lib/mensagens'
+import { multiplicadorInicial } from '@/lib/leitura'
 import { proximosEncontros } from '@/lib/encontros'
 import { useTitulo } from '@/hooks/useTitulo'
 import sobre from '@/data/sobre.json'
@@ -112,8 +113,12 @@ function PreviaDaMensagem({ mensagem }) {
       </header>
 
       {/* ~40% do texto, esvanecendo — a leitura inteira mora na página própria (FR-3). */}
-      <div className="previa-fade texto-mensagem">
-        <TextoFormatado texto={previa(corpo)} />
+      {/* O multiplicador fica num pai: inline no mesmo elemento substituiria
+          o 1.06em da classe em vez de compor (mesmo padrão das páginas). */}
+      <div style={{ fontSize: `${multiplicadorInicial()}em` }}>
+        <div className="previa-fade texto-mensagem">
+          <TextoFormatado texto={previa(corpo)} />
+        </div>
       </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -186,7 +191,9 @@ function SobreResumo() {
   return (
     <div className="mt-10 border-t border-borda pt-8">
       <h2 className="text-lg font-semibold text-azul-escuro">O Movimento</h2>
-      <p className="texto-mensagem mt-3">{sobre.paragrafos[0]}</p>
+      <div className="mt-3" style={{ fontSize: `${multiplicadorInicial()}em` }}>
+        <p className="texto-mensagem">{sobre.paragrafos[0]}</p>
+      </div>
       <Link
         to="/sobre"
         className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-lg border-2 border-azul px-5 font-medium text-azul hover:bg-azul hover:text-white"

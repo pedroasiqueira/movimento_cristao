@@ -19,3 +19,12 @@ export const PASSOS = [1, 1.19, 1.41, 1.68, 2]
 export function passoInicial() {
   return compactoAtivo() ? 0 : 1
 }
+
+/**
+ * Multiplicador com que o corpo de leitura abre — o MESMO em toda parte:
+ * páginas de leitura, prévia da home, Sobre e prévias do admin. Sem ele,
+ * o texto "pularia" de tamanho entre a prévia e a página completa.
+ */
+export function multiplicadorInicial() {
+  return PASSOS[passoInicial()]
+}

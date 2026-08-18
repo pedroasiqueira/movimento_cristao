@@ -6,6 +6,7 @@ import Letra from '@/components/Letra'
 import { apiEnviar } from '@/lib/api'
 import { buscarMusica, carregarMusicas, gerarIdMusica } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
+import { multiplicadorInicial } from '@/lib/leitura'
 
 /**
  * Cadastro de Música — Área Admin.
@@ -239,7 +240,9 @@ export default function AdminMusicaNova({ token }) {
             {listaAutores.length > 0 ? listaAutores.join(', ') : 'Autoria desconhecida'}
           </p>
           {secoesLimpas.length > 0 ? (
-            <Letra secoes={secoesLimpas} className="texto-mensagem mt-2" />
+            <div style={{ fontSize: `${multiplicadorInicial()}em` }}>
+              <Letra secoes={secoesLimpas} className="texto-mensagem mt-2" />
+            </div>
           ) : (
             <p className="mt-4 text-sm text-tinta-suave">
               A letra aparece aqui conforme você escreve.
