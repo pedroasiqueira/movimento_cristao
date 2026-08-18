@@ -119,7 +119,9 @@ export default function AdminMensagemNova({ token }) {
   }
 
   /** Envolve a seleção com a marca; já marcada, desfaz. Espaços das pontas
-      ficam fora — marca colada em espaço não formata, como no WhatsApp. */
+      ficam fora — marca colada em espaço não formata, como no WhatsApp.
+      Seleção de várias linhas ganha marca linha a linha — no WhatsApp a
+      marca não atravessa linha. */
   function aplicarMarca(marca) {
     const area = corpoRef.current
     if (!area) return
@@ -132,6 +134,19 @@ export default function AdminMensagemNova({ token }) {
     if (corpo[ini - 1] === marca && corpo[fim] === marca) {
       setCorpo(corpo.slice(0, ini - 1) + puro + corpo.slice(fim + 1))
       focarCorpoEm(ini - 1, fim - 1)
+    } else if (puro.includes('\n')) {
+      const marcada = new RegExp(`^(\\s*)\\${marca}(.+)\\${marca}(\\s*)$`)
+      const linhas = puro.split('\n')
+      const todasMarcadas = linhas.every((l) => !l.trim() || marcada.test(l))
+      const novo = linhas
+        .map((l) => {
+          if (!l.trim() || (!todasMarcadas && marcada.test(l))) return l
+          if (todasMarcadas) return l.replace(marcada, '$1$2$3')
+          return l.replace(/^(\s*)(.*?)(\s*)$/, `$1${marca}$2${marca}$3`)
+        })
+        .join('\n')
+      setCorpo(corpo.slice(0, ini) + novo + corpo.slice(fim))
+      focarCorpoEm(ini, ini + novo.length)
     } else if (puro.length > 1 && puro.startsWith(marca) && puro.endsWith(marca)) {
       setCorpo(corpo.slice(0, ini) + puro.slice(1, -1) + corpo.slice(fim))
       focarCorpoEm(ini, fim - 2)
