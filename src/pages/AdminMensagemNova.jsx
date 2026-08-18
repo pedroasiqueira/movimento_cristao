@@ -301,15 +301,6 @@ export default function AdminMensagemNova({ token }) {
       <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Forma de cadastro">
         <Button
           type="button"
-          variant={entrada === 'campos' ? 'default' : 'outline'}
-          className="min-h-12 px-5"
-          aria-pressed={entrada === 'campos'}
-          onClick={() => setEntrada('campos')}
-        >
-          Preencher os campos
-        </Button>
-        <Button
-          type="button"
           variant={entrada === 'colar' ? 'default' : 'outline'}
           className="min-h-12 gap-2 px-5"
           aria-pressed={entrada === 'colar'}
@@ -317,6 +308,15 @@ export default function AdminMensagemNova({ token }) {
         >
           <ClipboardPaste aria-hidden />
           Colar mensagem pronta
+        </Button>
+        <Button
+          type="button"
+          variant={entrada === 'campos' ? 'default' : 'outline'}
+          className="min-h-12 px-5"
+          aria-pressed={entrada === 'campos'}
+          onClick={() => setEntrada('campos')}
+        >
+          Preencher os campos
         </Button>
       </div>
 
