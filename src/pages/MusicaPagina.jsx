@@ -96,7 +96,10 @@ export default function MusicaPagina() {
 
 /**
  * Modo de canto — FR-12, realiza UJ-5 (Dona Célia, de pé, luz fraca, uma mão).
- * Corpo a partir de 2rem, rolável com o polegar, sair em um toque.
+ * Corpo em 2.25rem (36px na base padrão) — FR-12 exige ≥2rem; 36px é o
+ * tamanho validado no UJ-5 e mantém o modo sempre MAIOR que a leitura no
+ * passo máximo (senão "Melhorar visualização" encolheria o texto).
+ * Rolável com o polegar, sair em um toque.
  * Onde o navegador suportar, a tela não apaga (Wake Lock, readquirido ao
  * voltar de outra aplicação); onde não suportar, o modo continua funcionando
  * e o site orienta a pessoa a ajustar o tempo de tela — o fallback declarado.
@@ -165,12 +168,13 @@ function ModoCanto({ musica, aoSair }) {
         </p>
       )}
 
-      {/* FR-12: corpo a partir de 2rem no modo ativo */}
+      {/* FR-12 (≥2rem): 2.25rem, o físico validado — em rem: acompanha a
+          escala global e ignora o modo compacto (canto não deve encolher). */}
       <Letra
         secoes={musica.secoes}
         ampliada
         className="texto-mensagem mx-auto max-w-2xl px-5 pt-2 pb-24"
-        style={{ fontSize: '2rem' }}
+        style={{ fontSize: '2.25rem' }}
       />
     </div>
   )

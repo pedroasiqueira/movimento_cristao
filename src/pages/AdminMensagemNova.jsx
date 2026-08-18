@@ -528,7 +528,9 @@ function Formulario({ token, original }) {
                 citação destacada, e as marcas do WhatsApp valem aqui: *negrito* e _itálico_ —
                 colar de lá já traz a formatação.
               </p>
-              <div className="mb-2 flex gap-2" role="group" aria-label="Formatação do texto">
+              {/* size-10 (40px): abaixo do piso público de §7 de propósito —
+                ferramenta do Publicador, não do público 60+ (ver index.css). */}
+            <div className="mb-2 flex gap-2" role="group" aria-label="Formatação do texto">
                 <Button
                   type="button"
                   variant="outline"

@@ -31,7 +31,8 @@ export default function ControleFonte() {
   }, [escala])
 
   // O alvo de 48px vem de §7 e é maior que qualquer size do shadcn, por isso a
-  // altura vai explícita em vez de usar size="icon".
+  // altura vai explícita em vez de usar size="icon". (No modo compacto cai
+  // para 42px — isenção deliberada; ver a declaração canônica no index.css.)
   const alvo = 'size-12 [&_svg]:size-6'
 
   return (

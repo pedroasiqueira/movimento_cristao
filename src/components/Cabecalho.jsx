@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import ControleFonte from './ControleFonte'
+import ModoCompacto from './ModoCompacto'
 import { ITENS, ITENS_ADMIN } from '@/lib/navegacao'
 
 /**
@@ -66,6 +67,11 @@ export default function Cabecalho({ foraDeVista, aoMudar, admin = false, aoSairA
             </ul>
           </nav>
 
+          {/* Fim do menu do celular — mesma posição relativa do desktop. */}
+          <div className="lg:hidden">
+            <ModoCompacto />
+          </div>
+
           {/* Área Admin no celular — mesmo sinal do cartão do desktop.
               A barra compacta de rolagem não a exibe: continua só as seções. */}
           {admin && (
@@ -106,8 +112,10 @@ export default function Cabecalho({ foraDeVista, aoMudar, admin = false, aoSairA
       </header>
 
       {/* Barra compacta: fixa no topo enquanto a página está rolada.
-          Altura no limite: os itens são exatamente os 48px mínimos de alvo de
-          toque do §7 — mais estreito que isso quebraria a acessibilidade. */}
+          Altura no limite: no modo padrão os itens têm exatamente os 48px
+          mínimos de alvo de toque do §7. A única exceção é o modo compacto
+          (42px), escolha explícita do usuário — ver a declaração canônica
+          do piso no index.css. */}
       {foraDeVista && (
         <nav
           aria-label="Navegação rápida"

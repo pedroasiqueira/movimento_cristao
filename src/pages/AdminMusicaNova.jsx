@@ -174,6 +174,8 @@ export default function AdminMusicaNova({ token }) {
                       >
                         Virar {s.tipo === 'refrao' ? 'estrofe' : 'refrão'}
                       </Button>
+                      {/* size-10: abaixo do piso de §7 de propósito — tela
+                          do Publicador (ver index.css). */}
                       <Button
                         type="button"
                         variant="outline"

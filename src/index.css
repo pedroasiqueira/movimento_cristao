@@ -91,9 +91,10 @@
   ajustem juntos. Base convencional de 16px — decisão do Pedro (18/08/2026):
   o layout segue a medida dos sites comuns, e o conforto de leitura do
   público 60+ vem de dois controles, não do site inteiro inflado: esta
-  escala global (FR-17) e o zoom local da leitura, que já abre ampliado
-  (FR-18, PASSO_INICIAL em lib/leitura.js). O site também respeita a escala
-  do sistema operacional, porque todo o resto usa unidades relativas.
+  escala global (FR-17) e o zoom local da leitura, que abre ampliado por
+  padrão (FR-18, passoInicial() em lib/leitura.js; no modo compacto abre
+  no tamanho normal). O site também respeita a escala do sistema
+  operacional, porque todo o resto usa unidades relativas.
 */
 html {
   font-size: 16px;
@@ -106,11 +107,18 @@ html[data-escala="3"] { font-size: 23px; }
 /*
   Modo compacto (opt-in) — Pedro, 18/08/2026. O padrão do site segue
   acessível (85% do público é 60+); quem preferir reduz pela opção
-  discreta no fim do menu lateral. No Tailwind 4 toda utilitária de
-  dimensão é calc(var(--spacing) * N), então UMA variável encolhe
-  botões, inputs, paddings, margens, gaps e ícones dos controles de uma
-  vez — alvos de 48px caem para 42px. Tipografia e base (FR-17) ficam:
-  já estão na medida convencional e são outro eixo.
+  discreta no fim dos menus (lateral no desktop, faixa no celular).
+  No Tailwind 4 toda utilitária de dimensão é calc(var(--spacing) * N),
+  então UMA variável encolhe botões, inputs, paddings, margens, gaps e
+  ícones dos controles de uma vez. Tipografia e base (FR-17) ficam: já
+  estão na medida convencional e são outro eixo.
+
+  DECLARAÇÃO CANÔNICA do piso de alvo de toque (§7): no modo padrão os
+  controles públicos têm no MÍNIMO 48px (min-h-12/size-12). Só há duas
+  isenções conscientes: (a) este modo compacto — 42px, escolha explícita
+  de quem abriu mão do dimensionamento acessível; (b) controles das telas
+  do admin (ferramenta do Publicador, não do público 60+). Comentários em
+  Cabecalho.jsx e ControleFonte.jsx apontam para cá.
 */
 html[data-compacto] { --spacing: 0.21875rem; }
 

@@ -65,6 +65,8 @@ export default function MenuLateral({
           }
         >
           {aoAlternar && (
+            /* min-h-10: abaixo do piso de §7 de propósito — só existe nas
+               telas de cadastro do admin (ver index.css). */
             <button
               type="button"
               onClick={aoAlternar}
