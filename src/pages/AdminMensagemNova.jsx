@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Check, Plus } from 'lucide-react'
+import { ArrowLeft, Bold, Check, Italic, Plus, Quote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Mensagem from '@/components/Mensagem'
 import { apiEnviar } from '@/lib/api'
@@ -93,6 +93,69 @@ export default function AdminMensagemNova({ token }) {
     // Ponto do cursor no meio do painel: dá contexto acima e abaixo.
     rolarAte(ponto - caixa.clientHeight / 2)
   }, [campoAtivo, cursorCorpo, titulo, data, assinatura, corpo, proveniencia, canal])
+
+  // Botões de formatação — pedido do Pedro (17/08/2026): as marcas são as
+  // do WhatsApp (*negrito*, _itálico_), as mesmas que já chegam ao colar
+  // uma mensagem de lá; a citação é a linha inteira entre aspas (FR-4).
+  const corpoRef = useRef(null)
+
+  function focarCorpoEm(ini, fim) {
+    requestAnimationFrame(() => {
+      const area = corpoRef.current
+      if (!area) return
+      area.focus()
+      area.setSelectionRange(ini, fim)
+      setCursorCorpo(ini)
+    })
+  }
+
+  /** Envolve a seleção com a marca; já marcada, desfaz. Espaços das pontas
+      ficam fora — marca colada em espaço não formata, como no WhatsApp. */
+  function aplicarMarca(marca) {
+    const area = corpoRef.current
+    if (!area) return
+    let ini = area.selectionStart
+    let fim = area.selectionEnd
+    const trecho = corpo.slice(ini, fim)
+    ini += trecho.length - trecho.trimStart().length
+    fim -= trecho.length - trecho.trimEnd().length
+    const puro = corpo.slice(ini, fim)
+    if (corpo[ini - 1] === marca && corpo[fim] === marca) {
+      setCorpo(corpo.slice(0, ini - 1) + puro + corpo.slice(fim + 1))
+      focarCorpoEm(ini - 1, fim - 1)
+    } else if (puro.length > 1 && puro.startsWith(marca) && puro.endsWith(marca)) {
+      setCorpo(corpo.slice(0, ini) + puro.slice(1, -1) + corpo.slice(fim))
+      focarCorpoEm(ini, fim - 2)
+    } else if (ini === fim) {
+      setCorpo(corpo.slice(0, ini) + marca + marca + corpo.slice(ini))
+      focarCorpoEm(ini + 1, ini + 1)
+    } else {
+      setCorpo(corpo.slice(0, ini) + marca + puro + marca + corpo.slice(fim))
+      focarCorpoEm(ini, fim + 2)
+    }
+  }
+
+  /** Põe entre aspas a(s) linha(s) da seleção — linha inteira entre aspas
+      vira o bloco de citação. Já entre aspas, desfaz. */
+  function alternarCitacao() {
+    const area = corpoRef.current
+    if (!area) return
+    const ini =
+      area.selectionStart === 0 ? 0 : corpo.lastIndexOf('\n', area.selectionStart - 1) + 1
+    const quebra = corpo.indexOf('\n', area.selectionEnd)
+    const fim = quebra === -1 ? corpo.length : quebra
+    const linhas = corpo.slice(ini, fim).split('\n')
+    const todasCitadas = linhas.every((l) => !l.trim() || /^\s*".*"\s*$/.test(l))
+    const trecho = linhas
+      .map((l) => {
+        if (!l.trim()) return l
+        if (todasCitadas) return l.replace(/^(\s*)"(.*)"(\s*)$/, '$1$2$3')
+        return l.replace(/^(\s*)(.*?)(\s*)$/, '$1"$2"$3')
+      })
+      .join('\n')
+    setCorpo(corpo.slice(0, ini) + trecho + corpo.slice(fim))
+    focarCorpoEm(ini, ini + trecho.length)
+  }
 
   function alternarTag(tag) {
     setTags((atuais) =>
@@ -264,10 +327,44 @@ export default function AdminMensagemNova({ token }) {
             </label>
             <p className="mt-1 mb-1.5 text-sm text-tinta-suave">
               As quebras de linha ficam como no original. Linha inteira entre
-              aspas vira citação destacada.
+              aspas vira citação destacada, e as marcas do WhatsApp valem
+              aqui: *negrito* e _itálico_ — colar de lá já traz a formatação.
             </p>
+            <div className="mb-2 flex gap-2" role="group" aria-label="Formatação do texto">
+              <Button
+                type="button"
+                variant="outline"
+                className="size-12 [&_svg]:size-5"
+                aria-label="Negrito"
+                title="Negrito"
+                onClick={() => aplicarMarca('*')}
+              >
+                <Bold aria-hidden />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="size-12 [&_svg]:size-5"
+                aria-label="Itálico"
+                title="Itálico"
+                onClick={() => aplicarMarca('_')}
+              >
+                <Italic aria-hidden />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="size-12 [&_svg]:size-5"
+                aria-label="Citação"
+                title="Citação — linha inteira entre aspas"
+                onClick={alternarCitacao}
+              >
+                <Quote aria-hidden />
+              </Button>
+            </div>
             <textarea
               id="mensagem-corpo"
+              ref={corpoRef}
               onFocus={() => setCampoAtivo('corpo')}
               rows={14}
               value={corpo}

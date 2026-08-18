@@ -1,5 +1,39 @@
 import { emBlocos, porExtenso } from '@/lib/mensagens'
 
+/*
+  Marcas de formatação do WhatsApp — *negrito* e _itálico_. As mensagens
+  nascem lá (PRD §3), então colar já traz as marcas; aqui elas viram
+  formatação de verdade. Como no WhatsApp: não atravessam linhas e não
+  colam em espaço (o conteúdo começa e termina em caractere visível).
+*/
+const NEGRITO = /\*(\S(?:[^*\n]*\S)?)\*/
+const ITALICO = /_(\S(?:[^_\n]*\S)?)_/
+
+/** Texto cru → nós React com as marcas aplicadas (aninhamento incluso). */
+function comFormato(texto) {
+  const nos = []
+  let resto = texto
+  while (resto) {
+    const negrito = NEGRITO.exec(resto)
+    const italico = ITALICO.exec(resto)
+    const marca =
+      negrito && italico
+        ? negrito.index <= italico.index
+          ? negrito
+          : italico
+        : (negrito ?? italico)
+    if (!marca) {
+      nos.push(resto)
+      break
+    }
+    if (marca.index > 0) nos.push(resto.slice(0, marca.index))
+    const Formato = marca === negrito ? 'strong' : 'em'
+    nos.push(<Formato key={nos.length}>{comFormato(marca[1])}</Formato>)
+    resto = resto.slice(marca.index + marca[0].length)
+  }
+  return nos
+}
+
 export default function Mensagem({ mensagem, comoTitulo: Titulo = 'h1' }) {
   const { titulo, data, corpo, assinatura, proveniencia, canal } = mensagem
 
@@ -24,10 +58,10 @@ export default function Mensagem({ mensagem, comoTitulo: Titulo = 'h1' }) {
               key={i}
               className="my-5 border-l-4 border-azul bg-azul-claro py-3 pr-4 pl-5 text-azul-escuro"
             >
-              {bloco.linhas.join('\n').trim()}
+              {comFormato(bloco.linhas.join('\n').trim())}
             </blockquote>
           ) : (
-            <div key={i}>{bloco.linhas.join('\n')}</div>
+            <div key={i}>{comFormato(bloco.linhas.join('\n'))}</div>
           ),
         )}
       </div>
