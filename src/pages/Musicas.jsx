@@ -41,7 +41,7 @@ export default function Musicas() {
           onChange={(e) => setConsulta(e.target.value)}
           placeholder="Buscar pelo título ou por um trecho da letra…"
           aria-label="Buscar música pelo título ou por um trecho da letra"
-          className="h-14 w-full rounded-lg border border-borda bg-papel pr-4 pl-12 text-tinta placeholder:text-tinta-suave focus:border-azul"
+          className="h-12 w-full rounded-lg border border-borda bg-papel pr-4 pl-12 text-tinta placeholder:text-tinta-suave focus:border-azul"
         />
       </div>
 

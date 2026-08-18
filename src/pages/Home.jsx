@@ -144,7 +144,7 @@ function ProximoEncontro() {
       to="/encontros"
       className="mt-10 flex items-center gap-3 rounded-lg border border-borda bg-azul-claro/50 px-5 py-4 hover:border-azul hover:bg-azul-claro"
     >
-      <CalendarDays size={26} aria-hidden className="shrink-0 text-azul" />
+      <CalendarDays size={24} aria-hidden className="shrink-0 text-azul" />
       <span>
         <span className="block text-sm text-tinta-suave">Próximo encontro</span>
         <span className="block font-medium text-tinta">{porExtenso(proximo.data)}</span>
@@ -161,7 +161,7 @@ function Atalhos() {
         to="/acervo"
         className="rounded-lg border border-borda px-5 py-5 hover:border-azul hover:bg-azul-claro"
       >
-        <BookOpen size={26} aria-hidden className="text-azul" />
+        <BookOpen size={24} aria-hidden className="text-azul" />
         <p className="mt-2 font-semibold text-tinta">Acervo de mensagens</p>
         <p className="mt-1 text-sm text-tinta-suave">
           {acervo.length} mensagens guardadas — encontre por data, palavra ou assunto.
@@ -172,7 +172,7 @@ function Atalhos() {
         to="/musicas"
         className="rounded-lg border border-borda px-5 py-5 hover:border-azul hover:bg-azul-claro"
       >
-        <Music size={26} aria-hidden className="text-azul" />
+        <Music size={24} aria-hidden className="text-azul" />
         <p className="mt-2 font-semibold text-tinta">Músicas</p>
         <p className="mt-1 text-sm text-tinta-suave">
           As letras das músicas cantadas nos encontros, para acompanhar e reler.

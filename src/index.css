@@ -88,18 +88,20 @@
 /*
   Escala de leitura (FR-17).
   O tamanho base vive no <html> em px para que os rem de todo o site se
-  ajustem juntos. O padrão, 18px, é o piso de §7 — e o site também respeita
-  a escala do sistema operacional, porque todo o resto usa unidades relativas:
-  quem já configurou fonte grande no aparelho recebe o texto maior sem tocar
-  em nada.
+  ajustem juntos. Base convencional de 16px — decisão do Pedro (18/08/2026):
+  o layout segue a medida dos sites comuns, e o conforto de leitura do
+  público 60+ vem de dois controles, não do site inteiro inflado: esta
+  escala global (FR-17) e o zoom local da leitura, que já abre ampliado
+  (FR-18, PASSO_INICIAL em lib/leitura.js). O site também respeita a escala
+  do sistema operacional, porque todo o resto usa unidades relativas.
 */
 html {
-  font-size: 18px;
+  font-size: 16px;
   -webkit-text-size-adjust: 100%;
 }
-html[data-escala="1"] { font-size: 20px; }
-html[data-escala="2"] { font-size: 23px; }
-html[data-escala="3"] { font-size: 26px; }
+html[data-escala="1"] { font-size: 18px; }
+html[data-escala="2"] { font-size: 20px; }
+html[data-escala="3"] { font-size: 23px; }
 
 body {
   font-family: var(--font-interface);

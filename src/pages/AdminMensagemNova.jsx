@@ -389,7 +389,7 @@ export default function AdminMensagemNova({ token }) {
                 type="text"
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
-                className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
               />
               {erros.titulo && (
                 <p className="mt-1.5 text-sm font-medium text-destructive">{erros.titulo}</p>
@@ -406,7 +406,7 @@ export default function AdminMensagemNova({ token }) {
                 type="date"
                 value={data}
                 onChange={(e) => setData(e.target.value)}
-                className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
               />
               {erros.data && (
                 <p className="mt-1.5 text-sm font-medium text-destructive">{erros.data}</p>
@@ -449,7 +449,7 @@ export default function AdminMensagemNova({ token }) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="size-12 [&_svg]:size-5"
+                  className="size-10 [&_svg]:size-5"
                   aria-label="Negrito"
                   title="Negrito"
                   onClick={() => aplicarMarca('*')}
@@ -459,7 +459,7 @@ export default function AdminMensagemNova({ token }) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="size-12 [&_svg]:size-5"
+                  className="size-10 [&_svg]:size-5"
                   aria-label="Itálico"
                   title="Itálico"
                   onClick={() => aplicarMarca('_')}
@@ -469,7 +469,7 @@ export default function AdminMensagemNova({ token }) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="size-12 [&_svg]:size-5"
+                  className="size-10 [&_svg]:size-5"
                   aria-label="Citação"
                   title="Citação — linha inteira entre aspas"
                   onClick={alternarCitacao}
@@ -628,7 +628,7 @@ export default function AdminMensagemNova({ token }) {
                       value={quando}
                       onChange={(e) => setQuando(e.target.value)}
                       aria-label="Data e hora da publicação"
-                      className="h-14 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                      className="h-12 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
                     />
                     <p className="mt-1.5 text-sm text-tinta-suave">
                       Horário do fuso do Movimento (Natal). Até lá, a mensagem fica fora do
@@ -698,7 +698,7 @@ function Sucesso({ mensagem, aoRecomecar }) {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center gap-3">
-        <Check size={28} aria-hidden className="shrink-0 text-azul" />
+        <Check size={24} aria-hidden className="shrink-0 text-azul" />
         <h1 className="font-leitura text-3xl font-bold text-tinta">
           {mensagem.agendada ? 'Mensagem programada' : 'Mensagem publicada'}
         </h1>

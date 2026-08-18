@@ -112,7 +112,7 @@ export default function AdminMusicaNova({ token }) {
               type="text"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
-              className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+              className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
             />
             {erros.titulo && (
               <p className="mt-1.5 text-sm font-medium text-destructive">{erros.titulo}</p>
@@ -138,7 +138,7 @@ export default function AdminMusicaNova({ token }) {
               value={autores}
               onChange={(e) => setAutores(e.target.value)}
               placeholder="Separe por vírgula, se houver mais de um"
-              className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta placeholder:text-tinta-suave focus:border-azul"
+              className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta placeholder:text-tinta-suave focus:border-azul"
             />
             {/* FR-13: desconhecida é dita, não escondida. */}
             <p className="mt-1.5 text-sm text-tinta-suave">
@@ -176,7 +176,7 @@ export default function AdminMusicaNova({ token }) {
                       <Button
                         type="button"
                         variant="outline"
-                        className="size-12 [&_svg]:size-5"
+                        className="size-10 [&_svg]:size-5"
                         aria-label={`Remover ${s.tipo === 'refrao' ? 'refrão' : 'estrofe'} ${i + 1}`}
                         onClick={() => setSecoes((atuais) => atuais.filter((x) => x.chave !== s.chave))}
                       >
@@ -256,7 +256,7 @@ function Sucesso({ musica, aoRecomecar }) {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center gap-3">
-        <Check size={28} aria-hidden className="shrink-0 text-azul" />
+        <Check size={24} aria-hidden className="shrink-0 text-azul" />
         <h1 className="font-leitura text-3xl font-bold text-tinta">Música publicada</h1>
       </div>
       <p className="mt-3 text-tinta-suave">

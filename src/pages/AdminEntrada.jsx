@@ -63,7 +63,7 @@ function Entrada({ aoEntrar }) {
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="username"
             required
-            className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+            className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
           />
         </div>
         <div>
@@ -77,7 +77,7 @@ function Entrada({ aoEntrar }) {
             onChange={(e) => setSenha(e.target.value)}
             autoComplete="current-password"
             required
-            className="h-14 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+            className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
           />
         </div>
         {erro && (
@@ -114,7 +114,7 @@ function Hub({ aoSair }) {
             <li key={para}>
               <NavLink
                 to={para}
-                className="flex min-h-14 items-center gap-3 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
+                className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
               >
                 <Icone size={22} aria-hidden className="text-azul" />
                 {rotulo}
