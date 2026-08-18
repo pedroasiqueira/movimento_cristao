@@ -103,6 +103,17 @@ html[data-escala="1"] { font-size: 18px; }
 html[data-escala="2"] { font-size: 20px; }
 html[data-escala="3"] { font-size: 23px; }
 
+/*
+  Modo compacto (opt-in) — Pedro, 18/08/2026. O padrão do site segue
+  acessível (85% do público é 60+); quem preferir reduz pela opção
+  discreta no fim do menu lateral. No Tailwind 4 toda utilitária de
+  dimensão é calc(var(--spacing) * N), então UMA variável encolhe
+  botões, inputs, paddings, margens, gaps e ícones dos controles de uma
+  vez — alvos de 48px caem para 42px. Tipografia e base (FR-17) ficam:
+  já estão na medida convencional e são outro eixo.
+*/
+html[data-compacto] { --spacing: 0.21875rem; }
+
 body {
   font-family: var(--font-interface);
   color: var(--color-tinta);

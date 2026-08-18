@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react'
 import Mensagem from '@/components/Mensagem'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import AjusteLeitura from '@/components/AjusteLeitura'
-import { PASSOS, PASSO_INICIAL } from '@/lib/leitura'
+import { PASSOS, passoInicial } from '@/lib/leitura'
 import { buscarPorData, vizinhas, porNumero } from '@/lib/mensagens'
 import { useTitulo } from '@/hooks/useTitulo'
 
@@ -16,10 +16,10 @@ import { useTitulo } from '@/hooks/useTitulo'
 export default function MensagemPagina() {
   const { data } = useParams()
   const mensagem = buscarPorData(data ?? '')
-  // A leitura abre ampliada (FR-18): nível inicial em lib/leitura.js.
-  const [leitura, setLeitura] = useState({
-    passo: PASSO_INICIAL,
-    mult: PASSOS[PASSO_INICIAL],
+  // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
+  const [leitura, setLeitura] = useState(() => {
+    const passo = passoInicial()
+    return { passo, mult: PASSOS[passo] }
   })
   useTitulo(mensagem?.titulo)
 

@@ -4,7 +4,7 @@ import { Maximize2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import AjusteLeitura from '@/components/AjusteLeitura'
-import { PASSOS, PASSO_INICIAL } from '@/lib/leitura'
+import { PASSOS, passoInicial } from '@/lib/leitura'
 import Letra from '@/components/Letra'
 import { buscarMusica } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
@@ -18,10 +18,10 @@ export default function MusicaPagina() {
   const { id } = useParams()
   const musica = buscarMusica(id ?? '')
   const [modoCanto, setModoCanto] = useState(false)
-  // A leitura abre ampliada (FR-18): nível inicial em lib/leitura.js.
-  const [leitura, setLeitura] = useState({
-    passo: PASSO_INICIAL,
-    mult: PASSOS[PASSO_INICIAL],
+  // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
+  const [leitura, setLeitura] = useState(() => {
+    const passo = passoInicial()
+    return { passo, mult: PASSOS[passo] }
   })
   useTitulo(musica?.titulo)
 

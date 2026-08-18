@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import ControleFonte from './ControleFonte'
+import ModoCompacto from './ModoCompacto'
 import { Simbolo } from './Cabecalho'
 import { ITENS, ITENS_ADMIN } from '@/lib/navegacao'
 
@@ -123,6 +124,7 @@ export default function MenuLateral({
 
             <div className="mt-5 border-t border-borda pt-4">
               <ControleFonte />
+              <ModoCompacto />
             </div>
           </div>
 
