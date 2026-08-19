@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 488 488">
+  <title>Arca da Sagrada Aliança</title>
+  <defs>
+    <radialGradient id="brilho" gradientUnits="userSpaceOnUse" cx="256" cy="256" r="240">
+      <stop offset="0%"   stop-color="#02DFFE"/>
+      <stop offset="19%"  stop-color="#01D5FA"/>
+      <stop offset="37%"  stop-color="#01B5FB"/>
+      <stop offset="62%"  stop-color="#028BF4"/>
+      <stop offset="100%" stop-color="#1268D8"/>
+    </radialGradient>
+  </defs>
+  <path d="M 256.00 16.00 Q 271.19 102.66 288.67 166.24 Q 342.93 128.77 410.27 72.15 Q 366.20 148.30 338.72 208.24 Q 404.37 214.41 492.35 214.32 Q 409.65 244.33 350.07 272.59 Q 396.39 319.51 463.85 376.00 Q 381.20 345.83 317.40 329.17 Q 322.72 394.89 338.08 481.53 Q 294.17 405.29 256.00 351.52 Q 217.83 405.29 173.92 481.53 Q 189.28 394.89 194.60 329.17 Q 130.80 345.83 48.15 376.00 Q 115.61 319.51 161.93 272.59 Q 102.35 244.33 19.65 214.32 Q 107.63 214.41 173.28 208.24 Q 145.80 148.30 101.73 72.15 Q 169.07 128.77 223.33 166.24 Q 240.81 102.66 256.00 16.00 Z" fill="url(#brilho)"/>
+</svg>
