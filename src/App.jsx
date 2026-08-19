@@ -87,7 +87,9 @@ export default function App() {
    administrador pode reabrir; a escolha dura até trocar de página. */
 function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin }) {
   const { pathname } = useLocation()
-  const telaDeCadastro = ITENS_ADMIN.some((item) => item.para === pathname)
+  const telaDeCadastro =
+    ITENS_ADMIN.some((item) => item.para === pathname) ||
+    pathname.startsWith('/admin/mensagem/editar/')
   const [menuReaberto, setMenuReaberto] = useState(false)
   useEffect(() => setMenuReaberto(false), [pathname])
   const menuRecolhido = telaDeCadastro && !menuReaberto
@@ -118,7 +120,7 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/acervo" element={<Acervo />} />
-              <Route path="/mensagem/:data" element={<MensagemPagina />} />
+              <Route path="/mensagem/:data" element={<MensagemPagina admin={admin} />} />
               <Route path="/musicas" element={<Musicas />} />
               <Route path="/musica/:id" element={<MusicaPagina />} />
               <Route path="/encontros" element={<Encontros />} />
@@ -131,6 +133,17 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
               {/* Guarda visual; a proteção real é a API exigir o token. */}
               <Route
                 path="/admin/mensagem/nova"
+                element={
+                  admin ? (
+                    <AdminMensagemNova token={tokenAdmin} />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
+                }
+              />
+              {/* Edição de mensagem publicada — o mesmo formulário, preenchido. */}
+              <Route
+                path="/admin/mensagem/editar/:data"
                 element={
                   admin ? (
                     <AdminMensagemNova token={tokenAdmin} />

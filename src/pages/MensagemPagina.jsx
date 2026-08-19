@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Pencil } from 'lucide-react'
 import Mensagem from '@/components/Mensagem'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import AjusteLeitura from '@/components/AjusteLeitura'
@@ -11,9 +11,10 @@ import { useTitulo } from '@/hooks/useTitulo'
 /**
  * Página própria de cada Mensagem — FR-3: endereço estável /mensagem/AAAA-MM-DD,
  * a Mensagem inteira sem passar pela home. Anterior e seguinte — FR-5.
- * Ajuste local de leitura — FR-18.
+ * Ajuste local de leitura — FR-18. Com o administrador identificado, a página
+ * oferece o atalho de edição (FR-20) — a proteção real é a API exigir o token.
  */
-export default function MensagemPagina() {
+export default function MensagemPagina({ admin }) {
   const { data } = useParams()
   const mensagem = buscarPorData(data ?? '')
   // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
@@ -60,6 +61,15 @@ export default function MensagemPagina() {
 
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-borda pt-6">
         <BotaoCompartilhar titulo={mensagem.titulo} caminho={`/mensagem/${mensagem.data}`} />
+        {admin && (
+          <Link
+            to={`/admin/mensagem/editar/${mensagem.data}`}
+            className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
+          >
+            <Pencil size={18} aria-hidden />
+            Editar
+          </Link>
+        )}
         {mensagem.tags?.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {mensagem.tags.map((t) => (

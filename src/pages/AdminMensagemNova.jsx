@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Bold, Check, ClipboardPaste, Italic, Plus, Quote } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Mensagem from '@/components/Mensagem'
@@ -18,21 +18,56 @@ import { multiplicadorInicial } from '@/lib/leitura'
 import { useTitulo } from '@/hooks/useTitulo'
 
 /**
- * Cadastro da Mensagem do Dia — Área Admin.
+ * Cadastro e edição da Mensagem do Dia — Área Admin.
  * FR-9: publicar agora é o padrão, com o mínimo de passos; programar é opção.
  * FR-6: as tags já usadas são oferecidas para reaproveitamento, clicáveis.
  * FR-4: a prévia usa o componente real da página — quebras de linha e
  * citações aparecem exatamente como o site vai mostrar.
+ * FR-20: a mesma tela, aberta em /admin/mensagem/editar/:data, corrige uma
+ * mensagem já publicada sem criar registro novo nem mudar o endereço.
  */
 export default function AdminMensagemNova({ token }) {
-  useTitulo('Adicionar mensagem')
-  const [data, setData] = useState(hojeNoMovimento)
-  const [titulo, setTitulo] = useState('')
-  const [corpo, setCorpo] = useState('')
-  const [assinatura, setAssinatura] = useState('')
-  const [proveniencia, setProveniencia] = useState('')
-  const [canal, setCanal] = useState('')
-  const [tags, setTags] = useState([])
+  // Edição — a rota /admin/mensagem/editar/:data cai neste MESMO formulário
+  // (FR-20): a mensagem abre preenchida, a data (o endereço permanente) fica
+  // travada e o envio vira PATCH em vez de POST.
+  const { data: dataEdicao } = useParams()
+  const original = dataEdicao ? buscarPorData(dataEdicao) : null
+
+  if (dataEdicao && !original) {
+    return (
+      <>
+        <Link
+          to="/admin"
+          className="inline-flex min-h-12 items-center gap-1.5 text-azul underline underline-offset-2 hover:text-azul-escuro"
+        >
+          <ArrowLeft size={18} aria-hidden />
+          Área Admin
+        </Link>
+        <h1 className="mt-2 font-leitura text-3xl font-bold text-tinta">
+          Mensagem não encontrada
+        </h1>
+        <p className="mt-2 text-tinta-suave">
+          Não há mensagem publicada no dia {dataEdicao} para editar.
+        </p>
+      </>
+    )
+  }
+
+  // key: trocar de mensagem (ou sair da edição para o cadastro) recomeça limpo.
+  return <Formulario key={original?.data ?? 'nova'} token={token} original={original} />
+}
+
+/** Um formulário, dois usos: cadastro (original nulo) e edição (preenchido). */
+function Formulario({ token, original }) {
+  const edicao = Boolean(original)
+  useTitulo(edicao ? 'Editar mensagem' : 'Adicionar mensagem')
+  const [data, setData] = useState(original ? original.data : hojeNoMovimento)
+  const [titulo, setTitulo] = useState(original?.titulo ?? '')
+  const [corpo, setCorpo] = useState(original?.corpo ?? '')
+  const [assinatura, setAssinatura] = useState(original?.assinatura ?? '')
+  const [proveniencia, setProveniencia] = useState(original?.proveniencia ?? '')
+  const [canal, setCanal] = useState(original?.canal ?? '')
+  const [tags, setTags] = useState(original ? [...original.tags] : [])
   const [novaTag, setNovaTag] = useState('')
   const [momento, setMomento] = useState('agora')
   const [quando, setQuando] = useState('')
@@ -42,7 +77,8 @@ export default function AdminMensagemNova({ token }) {
 
   // Duas portas de entrada: a mensagem colada inteira (a principal — a
   // tela sempre abre nela, decisão do Pedro 18/08/2026) ou os campos.
-  const [entrada, setEntrada] = useState('colar')
+  // Na edição só os campos fazem sentido: o texto atual já está neles.
+  const [entrada, setEntrada] = useState(edicao ? 'campos' : 'colar')
   const [textoColado, setTextoColado] = useState('')
   const [avisosColada, setAvisosColada] = useState([])
   const [colada, setColada] = useState(false)
@@ -201,7 +237,8 @@ export default function AdminMensagemNova({ token }) {
     e.preventDefault()
     const encontrados = {}
     if (!data) encontrados.data = 'Escolha o dia da mensagem.'
-    else if (buscarPorData(data)) encontrados.data = 'Já existe uma mensagem nesse dia.'
+    else if (!edicao && buscarPorData(data))
+      encontrados.data = 'Já existe uma mensagem nesse dia.'
     if (!titulo.trim()) encontrados.titulo = 'A mensagem precisa de um título.'
     if (!corpo.trim()) encontrados.corpo = 'A mensagem precisa do texto.'
     if (momento === 'programar' && !quando)
@@ -212,25 +249,44 @@ export default function AdminMensagemNova({ token }) {
     setSalvando(true)
     try {
       const corpoLimpo = corpo.replace(/^\n+|\s+$/g, '')
-      await apiEnviar(
-        'POST',
-        '/mensagens',
-        {
-          data,
-          titulo: titulo.trim(),
-          corpo: corpoLimpo,
-          ...(assinatura.trim() && { assinatura: assinatura.trim() }),
-          ...(proveniencia.trim() && { proveniencia: proveniencia.trim() }),
-          ...(canal.trim() && { canal: canal.trim() }),
-          tags,
-          // FR-9: o horário digitado vale pelo relógio deste aparelho — o
-          // Publicador escreve de Natal, o próprio fuso do Movimento.
-          ...(momento === 'programar' && {
-            publicarEm: new Date(quando).toISOString(),
-          }),
-        },
-        token,
-      )
+      if (edicao) {
+        // FR-20: consertar é PATCH no mesmo endereço — nada de registro novo,
+        // `data` e `publicarEm` ficam como estão. Campo opcional esvaziado
+        // vai como null para ser apagado de verdade, não só omitido.
+        await apiEnviar(
+          'PATCH',
+          `/mensagens/${original.data}`,
+          {
+            titulo: titulo.trim(),
+            corpo: corpoLimpo,
+            assinatura: assinatura.trim() || null,
+            proveniencia: proveniencia.trim() || null,
+            canal: canal.trim() || null,
+            tags,
+          },
+          token,
+        )
+      } else {
+        await apiEnviar(
+          'POST',
+          '/mensagens',
+          {
+            data,
+            titulo: titulo.trim(),
+            corpo: corpoLimpo,
+            ...(assinatura.trim() && { assinatura: assinatura.trim() }),
+            ...(proveniencia.trim() && { proveniencia: proveniencia.trim() }),
+            ...(canal.trim() && { canal: canal.trim() }),
+            tags,
+            // FR-9: o horário digitado vale pelo relógio deste aparelho — o
+            // Publicador escreve de Natal, o próprio fuso do Movimento.
+            ...(momento === 'programar' && {
+              publicarEm: new Date(quando).toISOString(),
+            }),
+          },
+          token,
+        )
+      }
       // Acervo em memória recarregado: publicada agora, ela já aparece na
       // home, no acervo e na busca. Programada fica invisível até a hora.
       await carregarMensagens()
@@ -239,6 +295,7 @@ export default function AdminMensagemNova({ token }) {
         titulo: titulo.trim(),
         agendada: momento === 'programar',
         quando,
+        edicao,
       })
       window.scrollTo(0, 0)
     } catch (falha) {
@@ -309,34 +366,42 @@ export default function AdminMensagemNova({ token }) {
       </Link>
 
       <h1 className="mt-2 font-leitura text-3xl font-bold text-tinta">
-        Adicionar mensagem do dia
+        {edicao ? 'Editar mensagem do dia' : 'Adicionar mensagem do dia'}
       </h1>
       <p className="mt-2 text-tinta-suave">
-        Cole ou escreva o texto e acompanhe na prévia como a página vai ficar.
+        {edicao
+          ? 'Ajuste o texto e acompanhe na prévia como a página vai ficar.'
+          : 'Cole ou escreva o texto e acompanhe na prévia como a página vai ficar.'}
       </p>
 
       {/* Duas formas de entrada; a colada preenche estes mesmos campos. */}
-      <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Forma de cadastro">
-        <Button
-          type="button"
-          variant={entrada === 'colar' ? 'default' : 'outline'}
-          className="min-h-12 gap-2 px-5"
-          aria-pressed={entrada === 'colar'}
-          onClick={() => setEntrada('colar')}
+      {!edicao && (
+        <div
+          className="mt-5 flex flex-wrap gap-2"
+          role="group"
+          aria-label="Forma de cadastro"
         >
-          <ClipboardPaste aria-hidden />
-          Colar mensagem pronta
-        </Button>
-        <Button
-          type="button"
-          variant={entrada === 'campos' ? 'default' : 'outline'}
-          className="min-h-12 px-5"
-          aria-pressed={entrada === 'campos'}
-          onClick={() => setEntrada('campos')}
-        >
-          Preencher os campos
-        </Button>
-      </div>
+          <Button
+            type="button"
+            variant={entrada === 'colar' ? 'default' : 'outline'}
+            className="min-h-12 gap-2 px-5"
+            aria-pressed={entrada === 'colar'}
+            onClick={() => setEntrada('colar')}
+          >
+            <ClipboardPaste aria-hidden />
+            Colar mensagem pronta
+          </Button>
+          <Button
+            type="button"
+            variant={entrada === 'campos' ? 'default' : 'outline'}
+            className="min-h-12 px-5"
+            aria-pressed={entrada === 'campos'}
+            onClick={() => setEntrada('campos')}
+          >
+            Preencher os campos
+          </Button>
+        </div>
+      )}
 
       {entrada === 'colar' && (
         <div className="mt-6 max-w-3xl">
@@ -422,7 +487,8 @@ export default function AdminMensagemNova({ token }) {
                 type="date"
                 value={data}
                 onChange={(e) => setData(e.target.value)}
-                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                disabled={edicao}
+                className="h-12 w-full rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul disabled:cursor-not-allowed disabled:opacity-60"
               />
               {erros.data && (
                 <p className="mt-1.5 text-sm font-medium text-destructive">{erros.data}</p>
@@ -431,6 +497,7 @@ export default function AdminMensagemNova({ token }) {
               {data && (
                 <p className="mt-1.5 text-sm text-tinta-suave">
                   Endereço: <span className="font-medium text-tinta">/mensagem/{data}</span>
+                  {edicao && ' — permanente, a edição não o altera.'}
                 </p>
               )}
             </div>
@@ -614,51 +681,55 @@ export default function AdminMensagemNova({ token }) {
               )}
             </div>
 
-            <fieldset>
-              <legend className="font-medium text-tinta">Quando publicar</legend>
-              <div className="mt-2 space-y-2">
-                <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
-                  <input
-                    type="radio"
-                    name="momento"
-                    checked={momento === 'agora'}
-                    onChange={() => setMomento('agora')}
-                    className="size-5 accent-azul"
-                  />
-                  <span className="text-tinta">Publicar agora</span>
-                </label>
-                <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
-                  <input
-                    type="radio"
-                    name="momento"
-                    checked={momento === 'programar'}
-                    onChange={() => setMomento('programar')}
-                    className="size-5 accent-azul"
-                  />
-                  <span className="text-tinta">Programar para</span>
-                </label>
-                {momento === 'programar' && (
-                  <div className="pl-1">
+            {/* Na edição a mensagem já está no ar: o agendamento não se aplica
+                e `publicarEm` fica intocado no banco. */}
+            {!edicao && (
+              <fieldset>
+                <legend className="font-medium text-tinta">Quando publicar</legend>
+                <div className="mt-2 space-y-2">
+                  <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
                     <input
-                      type="datetime-local"
-                      value={quando}
-                      onChange={(e) => setQuando(e.target.value)}
-                      aria-label="Data e hora da publicação"
-                      className="h-12 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                      type="radio"
+                      name="momento"
+                      checked={momento === 'agora'}
+                      onChange={() => setMomento('agora')}
+                      className="size-5 accent-azul"
                     />
-                    <p className="mt-1.5 text-sm text-tinta-suave">
-                      Horário do fuso do Movimento (Natal). Até lá, a mensagem fica fora do
-                      site.
-                    </p>
-                    {erros.quando && (
-                      <p className="mt-1.5 text-sm font-medium text-destructive">
-                        {erros.quando}
+                    <span className="text-tinta">Publicar agora</span>
+                  </label>
+                  <label className="flex min-h-12 items-center gap-3 rounded-lg border border-borda px-4">
+                    <input
+                      type="radio"
+                      name="momento"
+                      checked={momento === 'programar'}
+                      onChange={() => setMomento('programar')}
+                      className="size-5 accent-azul"
+                    />
+                    <span className="text-tinta">Programar para</span>
+                  </label>
+                  {momento === 'programar' && (
+                    <div className="pl-1">
+                      <input
+                        type="datetime-local"
+                        value={quando}
+                        onChange={(e) => setQuando(e.target.value)}
+                        aria-label="Data e hora da publicação"
+                        className="h-12 w-full max-w-xs rounded-lg border border-borda bg-papel px-4 text-tinta focus:border-azul"
+                      />
+                      <p className="mt-1.5 text-sm text-tinta-suave">
+                        Horário do fuso do Movimento (Natal). Até lá, a mensagem fica fora
+                        do site.
                       </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </fieldset>
+                      {erros.quando && (
+                        <p className="mt-1.5 text-sm font-medium text-destructive">
+                          {erros.quando}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </fieldset>
+            )}
 
             {erros.api && (
               <p role="alert" className="text-sm font-medium text-destructive">
@@ -669,9 +740,11 @@ export default function AdminMensagemNova({ token }) {
             <Button type="submit" disabled={salvando} className="min-h-12 px-6">
               {salvando
                 ? 'Salvando…'
-                : momento === 'programar'
-                  ? 'Programar mensagem'
-                  : 'Publicar mensagem'}
+                : edicao
+                  ? 'Salvar alterações'
+                  : momento === 'programar'
+                    ? 'Programar mensagem'
+                    : 'Publicar mensagem'}
             </Button>
           </div>
 
@@ -716,7 +789,11 @@ function Sucesso({ mensagem, aoRecomecar }) {
       <div className="flex items-center gap-3">
         <Check size={24} aria-hidden className="shrink-0 text-azul" />
         <h1 className="font-leitura text-3xl font-bold text-tinta">
-          {mensagem.agendada ? 'Mensagem programada' : 'Mensagem publicada'}
+          {mensagem.edicao
+            ? 'Mensagem atualizada'
+            : mensagem.agendada
+              ? 'Mensagem programada'
+              : 'Mensagem publicada'}
         </h1>
       </div>
       <p className="mt-3 text-tinta-suave">
@@ -732,6 +809,8 @@ function Sucesso({ mensagem, aoRecomecar }) {
             </strong>
             . Até lá, o endereço /mensagem/{mensagem.data} não responde.
           </>
+        ) : mensagem.edicao ? (
+          <>já está no site com as alterações — dia {porExtenso(mensagem.data)}.</>
         ) : (
           <>já está no site — dia {porExtenso(mensagem.data)}.</>
         )}
@@ -746,9 +825,11 @@ function Sucesso({ mensagem, aoRecomecar }) {
             Ver a página da mensagem
           </Link>
         )}
-        <Button variant="outline" className="min-h-12 px-5" onClick={aoRecomecar}>
-          Cadastrar outra
-        </Button>
+        {!mensagem.edicao && (
+          <Button variant="outline" className="min-h-12 px-5" onClick={aoRecomecar}>
+            Cadastrar outra
+          </Button>
+        )}
       </div>
 
       <Link
