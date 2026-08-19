@@ -1,4 +1,3 @@
-import mensagens from '@/data/mensagens.json'
 import { apiGet } from './api'
 
 /** Fuso do Movimento. A data de referência nunca vem do relógio do aparelho — FR-1. */
@@ -106,11 +105,13 @@ const ordenar = (lista) => [...lista].sort((a, b) => b.data.localeCompare(a.data
 
 /**
  * Ordenadas da mais recente para a mais antiga.
- * Nasce dos JSONs empacotados (reserva) e é trocado pelo banco em
- * carregarMensagens(), chamada antes do primeiro render (main.jsx) — export
- * `let`: o binding é vivo, quem importa vê a lista nova.
+ * Nasce vazio e é preenchido por carregarMensagens(), chamada antes do
+ * primeiro render (main.jsx): pelo banco quando a API responde, senão pela
+ * reserva empacotada — carregada por import() dinâmico, num chunk separado,
+ * para o visitante normal não baixar ~2 MB que seriam descartados (FR-2).
+ * Export `let`: o binding é vivo, quem importa vê a lista nova.
  */
-export let acervo = ordenar(mensagens)
+export let acervo = []
 
 /** Documento da API → forma que as páginas usam (só os campos do schema). */
 const daApi = (m) => ({
@@ -123,22 +124,36 @@ const daApi = (m) => ({
   tags: m.tags ?? [],
 })
 
+/** Baixa a reserva empacotada — só chega aqui quando a API falha. */
+async function carregarReserva() {
+  try {
+    const { default: reserva } = await import('@/data/mensagens.json')
+    acervo = ordenar(reserva)
+  } catch (erro) {
+    // API E host estático fora do ar ao mesmo tempo: a Home mostra o estado
+    // "Ainda não há mensagens publicadas" — último recurso aceito.
+    console.warn('Reserva empacotada indisponível — acervo vazio.', erro)
+  }
+}
+
 /**
- * Troca a reserva pelos dados do banco. Nunca lança: com a API fora do ar ou
- * o banco vazio, os JSONs empacotados seguem valendo — o site nunca abre
- * vazio (FR-2).
+ * Carrega o acervo do banco; com a API fora do ar ou o banco vazio, desce à
+ * reserva empacotada — o site nunca abre vazio (FR-2). Nunca lança.
  */
 export async function carregarMensagens() {
   try {
     const lista = await apiGet('/mensagens')
     if (Array.isArray(lista) && lista.length > 0) {
       acervo = ordenar(lista.map(daApi))
-    } else {
-      console.warn('API sem mensagens — usando os dados empacotados.')
+      return
     }
+    console.warn('API sem mensagens — usando a reserva empacotada.')
   } catch (erro) {
-    console.warn('API indisponível — usando os dados empacotados.', erro)
+    console.warn('API indisponível — usando a reserva empacotada.', erro)
   }
+  // Só desce à reserva sem dados bons: a re-chamada após salvar no admin não
+  // pode trocar o acervo vindo do banco por uma reserva mais velha.
+  if (acervo.length === 0) await carregarReserva()
 }
 
 export function buscarPorData(iso) {
