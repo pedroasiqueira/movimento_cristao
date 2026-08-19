@@ -10,6 +10,13 @@ import { CITACAO, hojeNoMovimento } from './mensagens'
 
   Espelha as regras de reconstruir_mensagens.py (raiz do repo), que refez o
   corpus a partir do dump: mudou lá, muda aqui.
+
+  Limitação registrada (19/08/2026): o parser Python ganhou regras extras
+  para importar o HISTÓRICO 2023–2026 da exportação oficial do WhatsApp
+  (eras antigas de layout, typos de assinatura, rodapés multilinha). Este
+  espelho NÃO as reproduz de propósito: o formulário do admin só recebe
+  mensagens coladas no layout ATUAL — para lotes históricos, usar o parser
+  Python + seed.
 */
 
 /** Junta os pares partidos pelo WhatsApp: `*a* *b*` -> `*a b*` (idem _). */
