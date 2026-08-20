@@ -1,9 +1,12 @@
 /*
-  Escala global de texto — FR-17.
+  Escala de texto do site — FR-17, que desde 20/08/2026 absorveu também o
+  FR-18 (o ajuste local que existia dentro da Mensagem e da Música).
 
-  Mexe no font-size do <html> (html[data-escala], ver index.css); como todo o
-  CSS do site usa rem, o site inteiro acompanha. A preferência fica no
-  navegador, sem cadastro.
+  Escreve html[data-escala], e é o index.css que decide o que cada degrau
+  significa — hoje duas medidas por degrau: a raiz, que move a interface
+  inteira via rem, e --tamanho-leitura, que move o corpo dos textos num ritmo
+  bem mais rápido. Este arquivo não sabe de tamanhos; só do degrau. A
+  preferência fica no navegador, sem cadastro.
 
   Limite conhecido, registrado no PRD: o caminho de acesso previsto é abrir o
   link de dentro do WhatsApp, cujo navegador embutido isola o armazenamento e
@@ -23,7 +26,7 @@
 
 const CHAVE = 'mc:escala-texto'
 
-/** Níveis 0..3 → 16/18/20/23px. Os degraus vivem no index.css. */
+/** Quatro degraus (0..3). O que cada um vale — raiz e corpo — está no index.css. */
 export const ESCALA_MAX = 3
 
 const ouvintes = new Set()

@@ -86,23 +86,41 @@
 }
 
 /*
-  Escala de leitura (FR-17).
+  A ESCADA — um controle, dois ritmos (FR-17, que absorveu o FR-18).
+
+  Até 20/08/2026 havia dois controles de letra na mesma tela: esta escala
+  global e um zoom local dentro da Mensagem e da Música. Dois contadores com
+  denominadores diferentes ("1 de 4" e "2 de 5") para um público 60+ é o custo
+  que a contra-métrica SM-C3 do PRD proíbe, e o local ainda era esquecido a
+  cada navegação. Decisão do Pedro: um controle só, movendo DUAS medidas em
+  ritmos diferentes.
+
+  A raiz (interface: menus, botões, datas, molduras) cresce devagar, 44% de
+  ponta a ponta. O corpo de leitura cresce rápido, 142%. É por isso que a
+  segunda coluna não é derivável da primeira: são razões escolhidas
+  (1,26/1,5/1,81/2,12), não uma conta.
+
+  O motivo de a interface andar devagar é medido: para o corpo alcançar 48,8px
+  só pela raiz, ela precisaria ir a 46px — e o cabeçalho sozinho passaria a
+  medir 1024px numa tela de 844px. A pessoa abriria o site e não veria a
+  mensagem.
+
   O tamanho base vive no <html> em px para que os rem de todo o site se
   ajustem juntos. Base convencional de 16px — decisão do Pedro (18/08/2026):
-  o layout segue a medida dos sites comuns, e o conforto de leitura do
-  público 60+ vem de dois controles, não do site inteiro inflado: esta
-  escala global (FR-17) e o zoom local da leitura, que abre ampliado por
-  padrão (FR-18, passoInicial() em lib/leitura.js; no modo compacto abre
-  no tamanho normal). O site também respeita a escala do sistema
-  operacional, porque todo o resto usa unidades relativas.
+  o layout segue a medida dos sites comuns.
+
+  --tamanho-leitura mora AQUI, e não no :root: :root (0-1-0) perde para
+  html[data-escala] (0-1-1), então um token duplicado lá quebraria só o
+  primeiro degrau — o mais difícil de notar.
 */
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  --tamanho-leitura: 1.26rem;                                  /* 20,2px */
 }
-html[data-escala="1"] { font-size: 18px; }
-html[data-escala="2"] { font-size: 20px; }
-html[data-escala="3"] { font-size: 23px; }
+html[data-escala="1"] { font-size: 18px; --tamanho-leitura: 1.5rem; }   /* 27,0px */
+html[data-escala="2"] { font-size: 20px; --tamanho-leitura: 1.81rem; }  /* 36,2px */
+html[data-escala="3"] { font-size: 23px; --tamanho-leitura: 2.12rem; }  /* 48,8px */
 
 /*
   Modo compacto (opt-in) — Pedro, 18/08/2026. O padrão do site segue
@@ -110,8 +128,21 @@ html[data-escala="3"] { font-size: 23px; }
   discreta no fim dos menus (lateral no desktop, faixa no celular).
   No Tailwind 4 toda utilitária de dimensão é calc(var(--spacing) * N),
   então UMA variável encolhe botões, inputs, paddings, margens, gaps e
-  ícones dos controles de uma vez. Tipografia e base (FR-17) ficam: já
-  estão na medida convencional e são outro eixo.
+  ícones dos controles de uma vez. A raiz em px fica: já está na medida
+  convencional e é outro eixo.
+
+  O corpo de leitura, esse, o compacto desloca — mas só o COMEÇO da escada,
+  nunca o fim. Quem pediu interface densa abre no tamanho convencional
+  (17px em vez de 20,2px, herdando o que o antigo passoInicial() fazia) e
+  continua alcançando os mesmos 48,8px no último degrau. Um teto menor seria
+  invisível: o contador diria "4 de 4" para os dois usuários e eles veriam
+  tamanhos diferentes.
+
+  CONTRATO: cada degrau novo na escada acima exige o par
+  [data-compacto][data-escala="N"] aqui embaixo. Sem o par, a regra genérica
+  html[data-compacto] (0-1-1) empata com html[data-escala="N"] (0-1-1) e
+  vence por vir depois — o usuário do compacto despencaria para 1,06rem
+  justamente no degrau mais alto, em silêncio.
 
   DECLARAÇÃO CANÔNICA do piso de alvo de toque (§7): no modo padrão os
   controles públicos têm no MÍNIMO 48px (min-h-12/size-12), com 8px de
@@ -122,7 +153,10 @@ html[data-escala="3"] { font-size: 23px; }
   do Publicador, não do público 60+). Comentários em Cabecalho.jsx,
   BarraInferior.jsx e ControleFonte.jsx apontam para cá.
 */
-html[data-compacto] { --spacing: 0.21875rem; }
+html[data-compacto] { --spacing: 0.21875rem; --tamanho-leitura: 1.06rem; }  /* 17,0px */
+html[data-compacto][data-escala="1"] { --tamanho-leitura: 1.26rem; }       /* 22,7px */
+html[data-compacto][data-escala="2"] { --tamanho-leitura: 1.6rem; }        /* 32,0px */
+html[data-compacto][data-escala="3"] { --tamanho-leitura: 2.12rem; }       /* 48,8px */
 
 body {
   font-family: var(--font-interface);
@@ -175,20 +209,78 @@ body::before {
 /*
   O corpo da Mensagem preserva as quebras de linha do texto original (FR-4):
   o ritmo visual é conteúdo, não decoração.
-  O tamanho é em `em`, nunca `rem`: o ajuste local de leitura (FR-18) chega
-  como multiplicador em `em` num elemento pai — `rem` apontaria direto para o
-  <html> e descartaria o multiplicador (o A−/A+ da página deixaria de agir).
+
+  O tamanho vem do token da escada, e não de um `em` composto com um pai: é
+  justamente por apontar para o <html> que o controle único age em toda parte
+  — mensagem, música, Sobre, prévia da home — sem precisar de wrapper nenhum.
+  (Até 20/08/2026 era 1.06em, para poder compor com o zoom local que existia
+  então; ver a escada acima.) O fallback existe pelo mesmo motivo do --spacing
+  lá embaixo: token sumido invalidaria a declaração e o corpo cairia para 1rem.
+
+  O overflow-wrap não é cosmético. Sem ele, a palavra INCONDICIONALMENTE num
+  título estoura a folha branca num celular de 320px já na escala padrão
+  (medido: 49px para fora) — bug que era antigo e que a escada tornaria bem
+  mais visível.
 */
 .texto-mensagem {
   font-family: var(--font-leitura);
   white-space: pre-wrap;
-  font-size: 1.06em;
+  font-size: var(--tamanho-leitura, 1.26rem);
   line-height: 1.75;
+  overflow-wrap: break-word;
+}
+
+/*
+  Título de um texto de leitura — o que encabeça um corpo que segue o ritmo
+  rápido (Mensagem, Música, Sobre, prévia da home e as prévias do admin). NÃO
+  serve para cabeçalho de página: "Acervo", "Músicas", "Encontros" e afins são
+  interface e seguem o ritmo lento, mesmo usando a mesma família serifada.
+
+  max() em vez de uma razão fixa, decisão do Pedro (20/08/2026) depois de
+  medir: o piso mantém os degraus baixos IDÊNTICOS às utilitárias de antes
+  (text-2xl no celular, sm:text-3xl acima), então quem nunca toca no controle
+  não vê diferença nenhuma; e o teto faz o título parar de crescer quando o
+  corpo o alcança. Com uma razão fixa de 30%, o título mais longo do acervo
+  (69 caracteres em caixa alta) media 756px no último degrau — mais de uma
+  tela inteira antes da mensagem começar. Empatado com o corpo são 588px, e a
+  hierarquia passa a vir do serif, do negrito e do line-height apertado.
+*/
+.titulo-leitura {
+  font-size: max(1.5rem, var(--tamanho-leitura, 1.26rem));
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  /* Os títulos do acervo são longos e em caixa alta: num celular de 390px, no
+     último degrau, cabem duas palavras por linha. Sem hifenização, "CELESTIAL"
+     quebrava como "CELESTIA / L" — uma letra órfã que parece defeito. O
+     dicionário vem do lang="pt-BR" do index.html; medido, poupa uma linha
+     inteira de cinco. O break-word continua fazendo falta: palavras como
+     INCONDICIONALMENTE não têm ponto de hífen que caiba. */
+  hyphens: auto;
+}
+@media (min-width: 40rem) {
+  .titulo-leitura { font-size: max(1.875rem, var(--tamanho-leitura, 1.26rem)); }
+}
+
+/*
+  Rótulo "Refrão" dentro da letra (Letra.jsx). Em `em`, e não numa utilitária
+  rem, porque a Letra aparece em três tamanhos diferentes — página, modo de
+  canto e prévia do admin — e o rótulo tem que acompanhar o texto ao lado do
+  qual ele está. Em rem, no último degrau, virava um 17px perdido dentro de
+  uma letra de 48,8px, com cara de erro de renderização.
+*/
+.texto-mensagem .rotulo-refrao {
+  font-size: 0.6em;
+  line-height: 1.35;
 }
 
 /*
   Prévia da Mensagem na home: ~40% do texto esvanecendo para o branco da
   folha, com o botão "ler completa" logo abaixo — decisão do Pedro (FR-1).
+
+  A altura do esvanecimento é derivada do corpo (1,75 de entrelinha × 2), e
+  não os 4,5rem fixos de antes: com a escada, um valor fixo cobriria duas
+  linhas no primeiro degrau e só uma linha e pouco no último, virando uma
+  tarja em cima de uma linha só. Assim são duas linhas em qualquer degrau.
 */
 .previa-fade {
   position: relative;
@@ -198,7 +290,7 @@ body::before {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
-  height: 4.5rem;
+  height: calc(var(--tamanho-leitura, 1.26rem) * 3.5);
   background: linear-gradient(180deg, transparent, var(--papel));
 }
 

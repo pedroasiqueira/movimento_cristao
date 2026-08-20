@@ -32,7 +32,8 @@ import { ITENS } from '@/lib/navegacao'
  * separação (7px), declarada no index.css.
  *
  * O rótulo tem regra própria (.barra-inferior .rotulo, no index.css): cresce
- * com a escala de leitura até o limite da coluna e para ali.
+ * com a escala da interface até o limite da coluna e para ali. (Da interface,
+ * e não do corpo de leitura: são dois ritmos diferentes desde 20/08/2026.)
  *
  * O estado ativo não depende de cor: bloco preenchido (perceptível em escala
  * de cinza), peso da letra e aria-current, que o NavLink põe sozinho.

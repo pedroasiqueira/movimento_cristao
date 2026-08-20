@@ -2,8 +2,10 @@
   Modo compacto da interface — opt-in, persistido por navegador.
   O padrão do site é o dimensionamento acessível (público 60+); esta
   preferência reduz a interface para medidas de site convencional via
-  html[data-compacto] (ver index.css). Dataset no <html> e localStorage
-  protegido com try/catch, como a escala de texto (lib/escala.js) e o App.jsx.
+  html[data-compacto] (ver index.css), e desloca o começo da escada de leitura
+  — o texto abre no tamanho convencional, mas o último degrau continua o mesmo
+  para todo mundo. Dataset no <html> e localStorage protegido com try/catch,
+  como a escala de texto (lib/escala.js) e o App.jsx.
 */
 
 const CHAVE = 'mc:compacto'

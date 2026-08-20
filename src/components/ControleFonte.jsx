@@ -3,8 +3,16 @@ import { Button } from '@/components/ui/button'
 import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/escala'
 
 /**
- * Controle global de tamanho de texto — FR-17. A forma completa, com rótulo e
- * indicador: vive no menu lateral (desktop) e na faixa do topo (celular).
+ * O controle de tamanho de texto do site — FR-17. A forma completa, com
+ * rótulo e indicador: vive no menu lateral (desktop) e na faixa do topo
+ * (celular).
+ *
+ * É o ÚNICO controle desde 20/08/2026: o "Letra deste texto" que ficava
+ * dentro da Mensagem e da Música foi absorvido aqui. Cada toque move duas
+ * medidas em ritmos diferentes — a interface devagar, o corpo dos textos
+ * rápido (a escada está no index.css). Ganho colateral que vale registrar:
+ * a página de leitura tinha DUAS regiões aria-live e dois contadores com
+ * denominadores diferentes ("1 de 4" e "2 de 5") ao mesmo tempo; sobrou um.
  *
  * O mecanismo e o porquê do rem estão em lib/escala.js, onde mora o estado —
  * compartilhado porque este controle tem irmãos na tela (a pílula flutuante

@@ -1,10 +1,7 @@
-import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Pencil } from 'lucide-react'
 import Mensagem from '@/components/Mensagem'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
-import AjusteLeitura from '@/components/AjusteLeitura'
-import { PASSOS, passoInicial } from '@/lib/leitura'
 import { vizinhas, porNumero } from '@/lib/mensagens'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useMensagem } from '@/hooks/useMensagens'
@@ -12,8 +9,12 @@ import { useMensagem } from '@/hooks/useMensagens'
 /**
  * Página própria de cada Mensagem — FR-3: endereço estável /mensagem/AAAA-MM-DD,
  * a Mensagem inteira sem passar pela home. Anterior e seguinte — FR-5.
- * Ajuste local de leitura — FR-18. Com o administrador identificado, a página
- * oferece o atalho de edição (FR-20) — a proteção real é a API exigir o token.
+ * Com o administrador identificado, a página oferece o atalho de edição
+ * (FR-20) — a proteção real é a API exigir o token.
+ *
+ * O tamanho da letra não é assunto desta página: quem cuida disso é a escada
+ * do index.css, movida pelo controle único do cabeçalho. Até 20/08/2026 havia
+ * aqui um ajuste local que reiniciava a cada mensagem aberta.
  *
  * O texto inteiro só desce quando alguém abre esta página (memória → cache
  * local → API → reserva das recentes): a listagem do site circula sem corpo.
@@ -21,11 +22,6 @@ import { useMensagem } from '@/hooks/useMensagens'
 export default function MensagemPagina({ admin }) {
   const { data } = useParams()
   const { carregando, mensagem, situacao } = useMensagem(data ?? '')
-  // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
-  const [leitura, setLeitura] = useState(() => {
-    const passo = passoInicial()
-    return { passo, mult: PASSOS[passo] }
-  })
   useTitulo(mensagem?.titulo)
 
   if (!mensagem) {
@@ -87,15 +83,7 @@ export default function MensagemPagina({ admin }) {
     // Coluna de leitura: a folha é larga (desktop), a medida do texto não —
     // linha acima de ~80 caracteres cansa, e cansa mais aos 60+.
     <div className="mx-auto max-w-3xl">
-      <AjusteLeitura
-        passo={leitura.passo}
-        aoMudar={(passo, mult) => setLeitura({ passo, mult })}
-      />
-
-      {/* FR-18: multiplicador local sobre a escala global — o corpo herda em `em` */}
-      <div style={{ fontSize: `${leitura.mult}em` }}>
-        <Mensagem mensagem={mensagem} />
-      </div>
+      <Mensagem mensagem={mensagem} />
 
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-borda pt-6">
         <BotaoCompartilhar titulo={mensagem.titulo} caminho={`/mensagem/${mensagem.data}`} />
