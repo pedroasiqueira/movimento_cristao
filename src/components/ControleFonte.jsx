@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react'
-import { Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/escala'
 
@@ -11,6 +10,13 @@ import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/esc
  * compartilhado porque este controle tem irmãos na tela (a pílula flutuante
  * do celular, ControleFonteFlutuante.jsx) e todos precisam contar a mesma
  * história.
+ *
+ * "A−" e "A+", e não os sinais soltos que estavam aqui antes. O rótulo
+ * "Tamanho da letra" ao lado só aparece de sm (640px) para cima, ou seja, em
+ * NENHUM celular: lá o controle era um − e um + em volta de um "1 de 4" que
+ * não diz do que fala — podia ser zoom, volume, quantidade. A letra dentro do
+ * botão carrega o assunto sozinha, é a convenção que este público já viu em
+ * jornal e site de banco, e é o mesmo desenho da pílula flutuante.
  */
 export default function ControleFonte() {
   const escala = useSyncExternalStore(assinarEscala, escalaTexto)
@@ -18,7 +24,9 @@ export default function ControleFonte() {
   // O alvo de 48px vem de §7 e é maior que qualquer size do shadcn, por isso a
   // altura vai explícita em vez de usar size="icon". (No modo compacto cai
   // para 42px — isenção deliberada; ver a declaração canônica no index.css.)
-  const alvo = 'size-12 [&_svg]:size-6'
+  // O text-base sobe o glifo do text-sm padrão do Button: a letra é o
+  // conteúdo do botão agora, não um ícone ao lado de um rótulo.
+  const alvo = 'size-12 text-base font-semibold'
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -31,7 +39,7 @@ export default function ControleFonte() {
           disabled={escala === 0}
           aria-label="Diminuir o tamanho da letra"
         >
-          <Minus aria-hidden />
+          <span aria-hidden>A−</span>
         </Button>
 
         <span
@@ -49,7 +57,7 @@ export default function ControleFonte() {
           disabled={escala === ESCALA_MAX}
           aria-label="Aumentar o tamanho da letra"
         >
-          <Plus aria-hidden />
+          <span aria-hidden>A+</span>
         </Button>
       </div>
     </div>
