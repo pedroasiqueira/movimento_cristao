@@ -208,13 +208,14 @@ body::before {
   O RÓTULO. Em rem puro é impossível: numa janela de 320px cada coluna tem
   53px úteis, e "Encontros" a 0,75rem já mede 58px — some o fim da palavra
   justo para quem tem a tela menor. Então o tamanho é o MENOR entre o valor
-  de projeto (0,75rem = 12px, a medida de rótulo de barra de abas em que
-  Material e iOS convergiram, testada em polegar e vista cansada) e o que a
-  coluna comporta.
+  de projeto e o que a coluna comporta. O teto é 0,8125rem = 13px — um
+  ponto acima dos 12px canônicos de barra de abas (Material/iOS), decisão
+  do Pedro (19/08/2026): barra maior, pelo medo de o público 60+ não a
+  enxergar.
 
-  Consequência, medida no navegador: 12px cheios de 390px para cima (a
-  esmagadora maioria dos aparelhos), 11,5px em 360px e 10px em 320px — e
-  em nenhuma largura a palavra é cortada. O `truncate` do JSX é rede que
+  Consequência, medida no navegador: 13px cheios de 390px para cima (a
+  esmagadora maioria dos aparelhos), ~12,1px em 360px e ~10,6px em 320px —
+  e em nenhuma largura a palavra é cortada. O `truncate` do JSX é rede que
   não deve disparar.
 
   A conta: 20vw é a coluna (grid-cols-5), menos o m-1 dos dois lados. O
@@ -231,7 +232,7 @@ body::before {
   <ul>. Quem acrescentar um respiro ali quebra o cálculo em silêncio.
 */
 .barra-inferior .rotulo {
-  font-size: min(0.75rem, calc((20vw - var(--spacing, 0.25rem) * 2) / 5.3));
+  font-size: min(0.8125rem, calc((20vw - var(--spacing, 0.25rem) * 2) / 5.3));
   line-height: 1.35;
 }
 
@@ -252,7 +253,7 @@ body::before {
   encosta no lg (64rem) do Tailwind sem sobrepor.
 */
 @media (max-width: 63.999rem) {
-  html { scroll-padding-bottom: calc(var(--spacing, 0.25rem) * 18); }
+  html { scroll-padding-bottom: calc(var(--spacing, 0.25rem) * 20); }
 }
 
 /* Nenhuma animação para quem pediu menos movimento. */

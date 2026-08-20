@@ -24,10 +24,12 @@ import { ITENS } from '@/lib/navegacao'
  * uma letra 44% maior dentro de uma janela que não cresceu, e uma grade não
  * pode quebrar linha. O afastamento de 8px entre alvos (§7) vem do m-1 do
  * item, e não de um gap do contêiner: assim a coluna continua 20vw e a
- * margem ainda insere a pílula do item ativo dentro da faixa. min-h-12 é o
- * piso de 48px de §7; no modo compacto ele vira 42px e o afastamento 7px,
- * a isenção já declarada no index.css. Em 320px o alvo mede 56x48 na escala
- * padrão e 52x69 na escala 3 — nunca abaixo do piso.
+ * margem ainda insere a pílula do item ativo dentro da faixa. min-h-14 dá
+ * 56px de alvo — de propósito ACIMA do piso de 48px de §7: o Pedro pediu a
+ * barra mais alta depois de ver a primeira versão (19/08/2026), com medo de
+ * o público 60+ não a enxergar. Bônus: no modo compacto o alvo cai para
+ * 49px e continua acima do piso; a única isenção que sobra aqui é a de
+ * separação (7px), declarada no index.css.
  *
  * O rótulo tem regra própria (.barra-inferior .rotulo, no index.css): cresce
  * com a escala de leitura até o limite da coluna e para ali.
@@ -54,16 +56,16 @@ export default function BarraInferior() {
               to={para}
               end={fim}
               className={({ isActive }) =>
-                'm-1 flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors ' +
+                'm-1 flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors ' +
                 (isActive
                   ? 'bg-azul font-semibold text-white'
                   : 'text-tinta hover:bg-azul-claro hover:text-azul-escuro')
               }
             >
-              {/* size-6 como classe, e não size={24}: o CSS vence os atributos
+              {/* size-7 como classe, e não size={28}: o CSS vence os atributos
                   width/height do SVG, então o desenho acompanha o modo
                   compacto. Mesmo idioma do ControleFonte. */}
-              <Icone className="size-6 shrink-0" aria-hidden />
+              <Icone className="size-7 shrink-0" aria-hidden />
               <span className="rotulo w-full truncate text-center">{rotulo}</span>
             </NavLink>
           </li>

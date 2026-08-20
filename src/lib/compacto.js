@@ -2,9 +2,8 @@
   Modo compacto da interface — opt-in, persistido por navegador.
   O padrão do site é o dimensionamento acessível (público 60+); esta
   preferência reduz a interface para medidas de site convencional via
-  html[data-compacto] (ver index.css). Dataset no <html> como o
-  ControleFonte; localStorage protegido com try/catch como o App.jsx
-  (o ControleFonte não protege — pendência conhecida dele).
+  html[data-compacto] (ver index.css). Dataset no <html> e localStorage
+  protegido com try/catch, como a escala de texto (lib/escala.js) e o App.jsx.
 */
 
 const CHAVE = 'mc:compacto'
@@ -34,7 +33,7 @@ export function definirCompacto(ativo) {
  * Assinatura para useSyncExternalStore: o botão do modo existe em DUAS
  * instâncias sempre montadas (menu lateral e faixa do celular) — sem uma
  * fonte de verdade compartilhada, alternar numa deixaria o rótulo da outra
- * mentindo (o bug conhecido do ControleFonte com duas instâncias).
+ * mentindo. Mesma razão pela qual a escala de texto virou lib/escala.js.
  */
 export function assinarCompacto(avisar) {
   ouvintes.add(avisar)

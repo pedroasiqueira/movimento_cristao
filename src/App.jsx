@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
 import BarraInferior from '@/components/BarraInferior'
+import ControleFonteFlutuante from '@/components/ControleFonteFlutuante'
 import Contato from '@/components/Contato'
 import Home from '@/pages/Home'
 import Acervo from '@/pages/Acervo'
@@ -20,10 +21,10 @@ const AdminMensagemNova = lazy(() => import('@/pages/AdminMensagemNova'))
 const AdminMusicaNova = lazy(() => import('@/pages/AdminMusicaNova'))
 
 export default function App() {
-  // A faixa do topo está fora de vista? Sinal medido no Cabecalho, hoje com
-  // um consumidor só: o título que "desce" para o menu lateral no desktop.
-  // No celular ele não decide mais nada — a navegação de lá é a barra
-  // inferior, que está sempre visível.
+  // A faixa do topo está fora de vista? Sinal medido no Cabecalho, com um
+  // consumidor em cada largura: no desktop, o título que "desce" para o menu
+  // lateral; no celular, a pílula de tamanho de letra que acende no pé da
+  // janela quando o controle do topo sai de vista.
   const [cabecalhoFora, setCabecalhoFora] = useState(false)
 
   // Identificação de administrador — o token JWT vem do POST /auth/login da
@@ -87,6 +88,13 @@ export default function App() {
         entrarAdmin={entrarAdmin}
         sairAdmin={sairAdmin}
       />
+
+      {/* Por último de propósito, ao contrário da barra de navegação acima: a
+          pílula é atalho para um controle que já existe na faixa do topo, não
+          um caminho novo. Deixá-la no fim preserva a ordem de leitura
+          (identidade, ajuste, navegação, conteúdo) e não põe mais uma parada
+          de teclado antes do conteúdo. */}
+      <ControleFonteFlutuante visivel={cabecalhoFora} />
     </BrowserRouter>
   )
 }

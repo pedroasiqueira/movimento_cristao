@@ -6,13 +6,12 @@ import ModoCompacto from './ModoCompacto'
 import { ITENS_ADMIN } from '@/lib/navegacao'
 
 /**
- * A faixa do topo. O estado "faixa fora de vista" mora no App e hoje tem UM
- * consumidor: o MenuLateral do desktop, que recebe o título quando a faixa
- * sai de vista ao rolar. No celular ele não serve mais a nada — a barra
- * compacta que ele acendia virou a barra inferior fixa (BarraInferior.jsx),
- * que está sempre lá. Medir mesmo assim não custa: IntersectionObserver é
- * observação passiva, nada roda a cada pixel, e gastar um matchMedia para
- * desligá-lo abaixo de lg seria mais código do que economia.
+ * A faixa do topo. O estado "faixa fora de vista" mora no App e serve às duas
+ * larguras: no desktop o MenuLateral recebe o título quando a faixa sai de
+ * vista ao rolar; no celular acende a pílula de tamanho de letra no pé da
+ * janela (ControleFonteFlutuante.jsx), já que o controle daqui rola para fora
+ * junto com a faixa. Uma medição, dois consumidores — e barata:
+ * IntersectionObserver é observação passiva, nada roda a cada pixel.
  */
 export default function Cabecalho({ aoMudar, admin = false, aoSairAdmin }) {
   const refCabecalho = useRef(null)
