@@ -1,14 +1,22 @@
+import { apiGet } from './api'
 import { acervo } from './mensagens'
 
 /**
- * Busca por termos no Acervo — FR-7.
+ * Busca no Acervo — FR-7.
  *
- * O que ela é: normalização de acento e caixa, remoção de palavras vazias,
- * equivalência de variações curadas, ranking por onde o termo aparece.
- * O que ela não é (fora de escopo declarado no PRD): interpretação semântica
- * de perguntas. "O que é ser fraternal" funciona porque as palavras vazias
- * caem fora e "fraternal" equivale a "fraternidade" — não porque o site
- * entendeu a pergunta.
+ * Desde que o corpo das mensagens deixou de viajar para o navegador (análise
+ * de 19/08/2026), a busca por conteúdo acontece na API (GET /mensagens/busca),
+ * que roda O MESMO algoritmo que vivia aqui: normalização de acento e caixa,
+ * remoção de palavras vazias, equivalências curadas, ranking por onde o termo
+ * aparece (título 3, tag 2, corpo 1). A fonte única do vocabulário passou a
+ * ser movimento_cristao_api/src/mensagens/busca.util.ts — o tokenizador
+ * abaixo é o ESPELHO dela para a queda offline (título + tags, só o que o
+ * índice leve tem) e precisa acompanhar qualquer mudança de lá.
+ *
+ * O que a busca não é (fora de escopo declarado no PRD): interpretação
+ * semântica de perguntas. "O que é ser fraternal" funciona porque as palavras
+ * vazias caem fora e "fraternal" equivale a "fraternidade" — não porque o
+ * site entendeu a pergunta.
  */
 
 const PALAVRAS_VAZIAS = new Set(
@@ -23,7 +31,8 @@ const PALAVRAS_VAZIAS = new Set(
 /*
  * Grupos de variações que devem se encontrar. Curados à mão — o conjunto de
  * aceitação de FR-7 exige os dois primeiros pares. A lista precisa de dono
- * (nota em FR-7); enquanto não tiver, cresce aqui, com parcimônia.
+ * (nota em FR-7); enquanto não tiver, cresce em busca.util.ts (API), com
+ * parcimônia — e é copiada aqui.
  */
 const EQUIVALENCIAS = [
   ['fraternal', 'fraterno', 'fraterna', 'fraternos', 'fraternas', 'fraternidade'],
@@ -55,11 +64,9 @@ function tokens(texto) {
     .map((t) => CANONICO.get(t) ?? t)
 }
 
-/* Índice de conjuntos de tokens canônicos por campo. Preguiçoso e amarrado à
-   referência do acervo: quando carregarMensagens() troca a lista (dados do
-   banco chegando), o índice se remonta sozinho na busca seguinte.
-   O corpo já vem sem os blocos institucionais — separação feita na importação,
-   exatamente para que "Espírito da Verdade" não devolva o Acervo inteiro. */
+/* Índice de conjuntos de tokens canônicos por campo — SÓ título e tags, que
+   é o que o índice leve traz. Preguiçoso e amarrado à referência do acervo:
+   quando o acervo troca (dados do banco chegando), remonta-se sozinho. */
 let INDICE = null
 let indexadoDe = null
 
@@ -69,7 +76,6 @@ function indice() {
       mensagem: m,
       titulo: new Set(tokens(m.titulo)),
       tags: new Set(tokens((m.tags ?? []).join(' '))),
-      corpo: new Set(tokens(m.corpo)),
     }))
     indexadoDe = acervo
   }
@@ -77,18 +83,18 @@ function indice() {
 }
 
 /**
- * Devolve as Mensagens relacionadas aos termos, mais relevantes primeiro.
- * Relevância: título pesa 3, Tag pesa 2, corpo pesa 1, por termo encontrado.
+ * A queda offline: mesmo ranking, sem o corpo. Título pesa 3, Tag pesa 2,
+ * por termo encontrado; ordena por termos encontrados, pontos, data.
  */
-export function buscar(consulta) {
+function buscarNoIndice(consulta) {
   const termos = [...new Set(tokens(consulta))]
   if (termos.length === 0) return []
 
-  return indice().map(({ mensagem, titulo, tags, corpo }) => {
+  return indice().map(({ mensagem, titulo, tags }) => {
     let pontos = 0
     let encontrados = 0
     for (const t of termos) {
-      const p = (titulo.has(t) ? 3 : 0) + (tags.has(t) ? 2 : 0) + (corpo.has(t) ? 1 : 0)
+      const p = (titulo.has(t) ? 3 : 0) + (tags.has(t) ? 2 : 0)
       if (p > 0) encontrados++
       pontos += p
     }
@@ -102,4 +108,36 @@ export function buscar(consulta) {
         b.mensagem.data.localeCompare(a.mensagem.data),
     )
     .map((r) => r.mensagem)
+}
+
+/** Quantos resultados a tela recebe de uma vez — o suficiente para qualquer
+ *  consulta razoável, sem despejar centenas de cartões num celular antigo. */
+const LIMITE = 60
+
+/**
+ * Devolve { itens, total, origem } — mais relevantes primeiro.
+ *   origem 'indice'  — filtro sem termos (só tag), resolvido aqui mesmo;
+ *   origem 'api'     — busca completa, título+tags+corpo, na API;
+ *   origem 'titulos' — API fora do ar: busca local só em título e tags,
+ *                      e a tela avisa a diferença.
+ */
+export async function buscarMensagens(consulta, tag = null) {
+  const q = consulta.trim()
+
+  // Sem termos digitados o filtro por tag é resolvido no índice local:
+  // funciona offline e não custa uma requisição.
+  if (!q) {
+    const itens = tag ? acervo.filter((m) => m.tags?.includes(tag)) : acervo
+    return { itens, total: itens.length, origem: 'indice' }
+  }
+
+  try {
+    const parametros = new URLSearchParams({ q, limite: String(LIMITE) })
+    if (tag) parametros.set('tag', tag)
+    const r = await apiGet(`/mensagens/busca?${parametros}`, 10000)
+    return { itens: r.itens ?? [], total: r.total ?? 0, origem: 'api' }
+  } catch {
+    const locais = buscarNoIndice(q).filter((m) => !tag || m.tags?.includes(tag))
+    return { itens: locais.slice(0, LIMITE), total: locais.length, origem: 'titulos' }
+  }
 }

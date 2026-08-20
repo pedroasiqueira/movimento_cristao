@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import ControleFonte from './ControleFonte'
@@ -145,18 +145,32 @@ export default function Cabecalho({ foraDeVista, aoMudar, admin = false, aoSairA
   )
 }
 
-/* Marcador provisório no lugar do símbolo do Movimento.
-   O arquivo original, de preferência vetorial, ainda não foi obtido — PRD §12,
-   questão 6. O símbolo não deve ser redesenhado: isto é só um lugar reservado. */
+/* O símbolo do Movimento: a estrela de nove pontas, mesmo desenho do favicon
+   (public/favicon.svg) — proporções e cores medidas da imagem de referência
+   dada pelo Pedro em 19/08/2026. Substitui o marcador provisório; PRD §12,
+   questão 6, resolvida.
+   O id do gradiente vem do useId porque o símbolo aparece duas vezes na mesma
+   página no desktop (cabeçalho e MenuLateral), e dois ids iguais fariam o
+   segundo apontar para o gradiente do primeiro. */
 export function Simbolo() {
+  const idGradiente = `estrela-${useId()}`
+
   return (
-    <div
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-azul-claro"
+    <svg
+      viewBox="12 12 488 488"
+      className="h-11 w-11 shrink-0"
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="h-7 w-7 text-azul" fill="currentColor">
-        <path d="M12 1.5l2.1 6.4 6.4-2.1-3.9 5.6 5.6 3.9-6.8.4.4 6.8-3.8-5.6-3.8 5.6.4-6.8-6.8-.4 5.6-3.9L3.5 5.8l6.4 2.1z" />
-      </svg>
-    </div>
+      <defs>
+        <radialGradient id={idGradiente} gradientUnits="userSpaceOnUse" cx="256" cy="256" r="240">
+          <stop offset="0%" stopColor="#02DFFE" />
+          <stop offset="19%" stopColor="#01D5FA" />
+          <stop offset="37%" stopColor="#01B5FB" />
+          <stop offset="62%" stopColor="#028BF4" />
+          <stop offset="100%" stopColor="#1268D8" />
+        </radialGradient>
+      </defs>
+      <path d="M 256.00 16.00 Q 271.19 102.66 288.67 166.24 Q 342.93 128.77 410.27 72.15 Q 366.20 148.30 338.72 208.24 Q 404.37 214.41 492.35 214.32 Q 409.65 244.33 350.07 272.59 Q 396.39 319.51 463.85 376.00 Q 381.20 345.83 317.40 329.17 Q 322.72 394.89 338.08 481.53 Q 294.17 405.29 256.00 351.52 Q 217.83 405.29 173.92 481.53 Q 189.28 394.89 194.60 329.17 Q 130.80 345.83 48.15 376.00 Q 115.61 319.51 161.93 272.59 Q 102.35 244.33 19.65 214.32 Q 107.63 214.41 173.28 208.24 Q 145.80 148.30 101.73 72.15 Q 169.07 128.77 223.33 166.24 Q 240.81 102.66 256.00 16.00 Z" fill={`url(#${idGradiente})`} />
+    </svg>
   )
 }

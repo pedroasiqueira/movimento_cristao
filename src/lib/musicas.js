@@ -1,5 +1,6 @@
 import musicasLocais from '@/data/musicas.json'
 import { apiGet } from './api'
+import { notificar } from './store'
 
 /*
  * As Músicas nascem dos JSONs empacotados (reserva) e são trocadas pelo banco
@@ -43,6 +44,8 @@ export async function carregarMusicas() {
     if (Array.isArray(lista) && lista.length > 0) {
       todas = lista.map(daApi)
       repertorio = ordenar(todas.filter((m) => !m.despublicada))
+      // O primeiro render não esperou por isto (main.jsx): avisa quem mostra.
+      notificar()
     } else {
       console.warn('API sem músicas — usando os dados empacotados.')
     }

@@ -1,6 +1,15 @@
 import { apiGet } from './api'
+import {
+  gravarDestaqueLocal,
+  gravarNoCache,
+  lerDestaqueLocal,
+  lerDoCache,
+  limparCache,
+} from './cache'
+import { notificar } from './store'
 
-/** Fuso do Movimento. A data de referência nunca vem do relógio do aparelho — FR-1. */
+/** Fuso do Movimento. A data de referência vem do relógio DO SERVIDOR
+ *  (/mensagens/destaque); o do aparelho é só o último recurso — FR-1. */
 const FUSO = 'America/Fortaleza'
 
 /** Acima disto, a home deixa de apresentar a Mensagem como se fosse de hoje — FR-2. */
@@ -48,7 +57,7 @@ export function emBlocos(corpo) {
   return blocos.filter((b) => b.linhas.join('\n').trim() !== '')
 }
 
-/** Data de hoje no fuso do Movimento, como AAAA-MM-DD. */
+/** Data de hoje no fuso do Movimento pelo relógio do aparelho — só reserva. */
 export function hojeNoMovimento() {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: FUSO,
@@ -103,15 +112,35 @@ export function rotuloMes(iso) {
 
 const ordenar = (lista) => [...lista].sort((a, b) => b.data.localeCompare(a.data))
 
-/**
- * Ordenadas da mais recente para a mais antiga.
- * Nasce vazio e é preenchido por carregarMensagens(), chamada antes do
- * primeiro render (main.jsx): pelo banco quando a API responde, senão pela
- * reserva empacotada — carregada por import() dinâmico, num chunk separado,
- * para o visitante normal não baixar ~2 MB que seriam descartados (FR-2).
+/*
+ * ————————————————————————————————————————————————————————————————————————
+ * O acervo em memória.
+ *
+ * Desde a separação listagem/conteúdo (análise de 19/08/2026), o navegador
+ * não recebe mais o corpo das 900+ mensagens de uma vez. O que circula:
+ *
+ *   acervo    — o ÍNDICE: { data, titulo, tags } de todas, mais recente
+ *               primeiro. ~12 KB comprimido. Alimenta Acervo, vizinhas,
+ *               tags e a busca offline.
+ *   destaque  — UMA mensagem completa (a de hoje ou a mais recente) com a
+ *               data de referência do servidor. É o primeiro conteúdo da
+ *               home, ~2 KB.
+ *   completas — as mensagens inteiras já lidas nesta visita, por data.
+ *
+ * Cada fonte tem reserva: API → cache local → /dados/*.json empacotados no
+ * host estático. O site nunca abre vazio (FR-2) e nada disso bloqueia o
+ * primeiro render (main.jsx). Mudou algo aqui → notificar() avisa quem está
+ * na tela (store.js).
  * Export `let`: o binding é vivo, quem importa vê a lista nova.
  */
 export let acervo = []
+
+let totalAcervo = 0
+let hojeServidor = null
+let mensagemDestaque = null
+let carregandoDestaque = true
+let carregandoIndice = true
+const completas = new Map()
 
 /** Documento da API → forma que as páginas usam (só os campos do schema). */
 const daApi = (m) => ({
@@ -124,69 +153,250 @@ const daApi = (m) => ({
   tags: m.tags ?? [],
 })
 
-/** Baixa a reserva empacotada — só chega aqui quando a API falha. */
-async function carregarReserva() {
-  try {
-    const { default: reserva } = await import('@/data/mensagens.json')
-    acervo = ordenar(reserva)
-  } catch (erro) {
-    // API E host estático fora do ar ao mesmo tempo: a Home mostra o estado
-    // "Ainda não há mensagens publicadas" — último recurso aceito.
-    console.warn('Reserva empacotada indisponível — acervo vazio.', erro)
-  }
+/* As reservas empacotadas em public/dados/ (geradas por
+   scripts/gerar-reserva.mjs no build) — só são baixadas quando a API falha.
+   A promessa é guardada: cada arquivo desce no máximo uma vez por visita. */
+let promessaReservaIndice = null
+function reservaIndice() {
+  promessaReservaIndice ??= fetch('/dados/indice.json')
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null)
+  return promessaReservaIndice
+}
+
+let promessaReservaRecentes = null
+function reservaRecentes() {
+  promessaReservaRecentes ??= fetch('/dados/recentes.json')
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null)
+  return promessaReservaRecentes
 }
 
 /**
- * Carrega o acervo do banco; com a API fora do ar ou o banco vazio, desce à
- * reserva empacotada — o site nunca abre vazio (FR-2). Nunca lança.
+ * Antes do primeiro render (main.jsx), síncrono e barato: a segunda visita
+ * pinta a home com o destaque guardado no localStorage, antes de qualquer
+ * requisição — e atualiza por trás.
  */
-export async function carregarMensagens() {
+export function iniciarMensagens() {
+  const guardado = lerDestaqueLocal()
+  if (guardado?.mensagem) {
+    mensagemDestaque = guardado.mensagem
+    totalAcervo = guardado.total ?? 0
+    carregandoDestaque = false
+  }
+}
+
+/** A resposta da lista, venha do formato novo ({total, itens}) ou de uma API
+ *  antiga ainda no formato completo (lista de documentos) — tolerância que
+ *  torna a ordem de implantação site/API indiferente. */
+function normalizarLista(resposta) {
+  const brutos = Array.isArray(resposta) ? resposta : resposta?.itens
+  if (!Array.isArray(brutos) || brutos.length === 0) return null
+  return {
+    total: Array.isArray(resposta) ? resposta.length : (resposta.total ?? brutos.length),
+    itens: brutos.map((m) => ({ data: m.data, titulo: m.titulo, tags: m.tags ?? [] })),
+  }
+}
+
+function aplicarIndice({ total, itens }) {
+  acervo = ordenar(itens)
+  totalAcervo = total
+  carregandoIndice = false
+  notificar()
+}
+
+async function carregarDestaque(forcar = false) {
   try {
-    const lista = await apiGet('/mensagens')
-    if (Array.isArray(lista) && lista.length > 0) {
-      acervo = ordenar(lista.map(daApi))
+    const d = await apiGet('/mensagens/destaque', 5000, forcar ? { cache: 'reload' } : {})
+    if (d?.mensagem) {
+      hojeServidor = d.hoje ?? null
+      totalAcervo = d.total ?? totalAcervo
+      mensagemDestaque = daApi(d.mensagem)
+      completas.set(mensagemDestaque.data, mensagemDestaque)
+      gravarDestaqueLocal({ total: d.total, mensagem: mensagemDestaque })
+      carregandoDestaque = false
+      notificar()
       return
     }
     console.warn('API sem mensagens — usando a reserva empacotada.')
   } catch (erro) {
-    console.warn('API indisponível — usando a reserva empacotada.', erro)
+    console.warn('API indisponível para o destaque — usando a reserva.', erro)
   }
-  // Só desce à reserva sem dados bons: a re-chamada após salvar no admin não
-  // pode trocar o acervo vindo do banco por uma reserva mais velha.
-  if (acervo.length === 0) await carregarReserva()
+  // Sem dados bons da API: a reserva só entra se nada melhor já estiver na
+  // tela (o destaque do localStorage é mais novo que o do último build).
+  if (!mensagemDestaque) {
+    const reserva = await reservaRecentes()
+    const primeira = reserva?.itens?.[0]
+    if (primeira) {
+      mensagemDestaque = daApi(primeira)
+      completas.set(mensagemDestaque.data, mensagemDestaque)
+      totalAcervo = totalAcervo || (reserva.total ?? 0)
+    }
+  }
+  carregandoDestaque = false
+  notificar()
 }
 
+async function carregarIndice(forcar = false) {
+  // O índice guardado da visita anterior pinta o Acervo na hora…
+  if (!forcar && acervo.length === 0) {
+    const guardado = await lerDoCache('/cache/indice')
+    if (guardado?.itens?.length) aplicarIndice(guardado)
+  }
+  // …e a API atualiza por cima quando responder.
+  try {
+    const resposta = await apiGet(
+      '/mensagens?formato=lista',
+      20000,
+      forcar ? { cache: 'reload' } : {},
+    )
+    const lista = normalizarLista(resposta)
+    if (lista) {
+      aplicarIndice(lista)
+      void gravarNoCache('/cache/indice', lista)
+      return
+    }
+    console.warn('API sem mensagens — usando a reserva empacotada.')
+  } catch (erro) {
+    console.warn('API indisponível para o índice — usando a reserva.', erro)
+  }
+  if (acervo.length === 0) {
+    const reserva = await reservaIndice()
+    const lista = reserva ? normalizarLista(reserva) : null
+    if (lista) {
+      aplicarIndice(lista)
+      return
+    }
+    // API E host estático fora do ar ao mesmo tempo: o Acervo mostra o estado
+    // vazio — último recurso aceito.
+    console.warn('Reserva empacotada indisponível — acervo vazio.')
+  }
+  carregandoIndice = false
+  notificar()
+}
+
+/**
+ * Carrega destaque e índice, cada um com sua reserva — o site nunca abre
+ * vazio (FR-2) e nunca lança. Chamada no boot (main.jsx, SEM await: o render
+ * não espera) e após salvar no admin — aí com { forcar: true }, que descarta
+ * os caches locais para a correção (FR-20) aparecer de imediato.
+ */
+export async function carregarMensagens({ forcar = false } = {}) {
+  if (forcar) {
+    completas.clear()
+    await limparCache()
+  }
+  await Promise.allSettled([carregarDestaque(forcar), carregarIndice(forcar)])
+}
+
+/**
+ * A mensagem INTEIRA de uma data — memória → cache local → API → reserva.
+ * Devolve { estado, mensagem }: 'ok' com a mensagem; 'nao-encontrada' quando
+ * o endereço não existe; 'indisponivel' quando existe mas não há como baixar
+ * agora (sem rede). Cache local revalidado por trás — uma correção (FR-20)
+ * substitui a cópia guardada na visita seguinte com rede.
+ */
+export async function carregarMensagem(data) {
+  if (!data) return { estado: 'nao-encontrada', mensagem: null }
+  const guardada = completas.get(data)
+  if (guardada) return { estado: 'ok', mensagem: guardada }
+
+  const chave = `/cache/mensagem/${data}`
+  const doCache = await lerDoCache(chave)
+  if (doCache) {
+    completas.set(data, doCache)
+    void apiGet(`/mensagens/${data}`, 12000)
+      .then((m) => {
+        const nova = daApi(m)
+        completas.set(data, nova)
+        void gravarNoCache(chave, nova)
+        notificar()
+      })
+      .catch(() => {})
+    return { estado: 'ok', mensagem: doCache }
+  }
+
+  try {
+    const mensagem = daApi(await apiGet(`/mensagens/${data}`, 12000))
+    completas.set(data, mensagem)
+    void gravarNoCache(chave, mensagem)
+    return { estado: 'ok', mensagem }
+  } catch (erro) {
+    if (erro.status === 404) return { estado: 'nao-encontrada', mensagem: null }
+    const reserva = await reservaRecentes()
+    const bruta = reserva?.itens?.find((m) => m.data === data)
+    if (bruta) {
+      const mensagem = daApi(bruta)
+      completas.set(data, mensagem)
+      return { estado: 'ok', mensagem }
+    }
+    // Sem rede e fora das recentes: se o índice conhece a data, ela existe —
+    // só não dá para baixar agora.
+    return {
+      estado: buscarPorData(data) ? 'indisponivel' : 'nao-encontrada',
+      mensagem: null,
+    }
+  }
+}
+
+/** Item do ÍNDICE (sem corpo) — existência, título, tags, vizinhança. */
 export function buscarPorData(iso) {
   return acervo.find((m) => m.data === iso) ?? null
+}
+
+/** O que a home consome; muda → notificar() (store.js) avisa. */
+export function estadoDestaque() {
+  return {
+    carregando: carregandoDestaque,
+    hoje: hojeServidor,
+    total: totalAcervo || acervo.length,
+    mensagem: mensagemDestaque,
+  }
+}
+
+export function estadoAcervo() {
+  return { carregando: carregandoIndice && acervo.length === 0, total: totalAcervo || acervo.length }
 }
 
 /**
  * O que a home mostra em destaque — FR-1 e FR-2.
  *
  * Devolve a Mensagem mais a situação em que ela está:
- *   'hoje'      — é a Mensagem do dia corrente.
- *   'recente'   — não há a de hoje, mas a defasagem é normal. Inclui o domingo,
- *                 em que a Mensagem vem em áudio e a de sábado permanece.
- *   'defasada'  — passou do limite. A home muda o enquadramento em vez de
- *                 seguir fingindo destaque diário.
+ *   'hoje'         — é a Mensagem do dia corrente.
+ *   'recente'      — não há a de hoje, mas a defasagem é normal. Inclui o
+ *                    domingo, em que a Mensagem vem em áudio e a de sábado
+ *                    permanece.
+ *   'defasada'     — passou do limite. A home muda o enquadramento em vez de
+ *                    seguir fingindo destaque diário.
+ *   'carregando'   — ainda não há o que mostrar, mas está a caminho.
+ *   'indisponivel' — nem API, nem cache, nem reserva; o índice pode existir.
+ *   'vazio'        — não há mensagem nenhuma em fonte nenhuma.
+ *
+ * O dia corrente é o do relógio do SERVIDOR quando a API respondeu; o do
+ * aparelho só serve de reserva — celular com data errada não muda o site.
  */
-export function destaqueDaHome(hoje = hojeNoMovimento()) {
-  const doDia = buscarPorData(hoje)
-  if (doDia) return { mensagem: doDia, situacao: 'hoje', diasAtras: 0 }
+export function destaqueDaHome(hoje = hojeServidor ?? hojeNoMovimento()) {
+  const mensagem = mensagemDestaque
+  if (!mensagem) {
+    if (carregandoDestaque) return { mensagem: null, situacao: 'carregando', diasAtras: 0 }
+    return {
+      mensagem: null,
+      situacao: acervo.length > 0 ? 'indisponivel' : 'vazio',
+      diasAtras: 0,
+    }
+  }
+  if (mensagem.data === hoje) return { mensagem, situacao: 'hoje', diasAtras: 0 }
 
-  const ultima = acervo[0]
-  if (!ultima) return { mensagem: null, situacao: 'vazio', diasAtras: 0 }
-
-  const diasAtras = diasEntre(ultima.data, hoje)
+  const diasAtras = diasEntre(mensagem.data, hoje)
 
   // Domingo tem Mensagem em áudio, não em texto: a de sábado continua valendo
   // e isso não é atraso. Padrão confirmado no corpus — 7 domingos, 7 sem texto.
   if (ehDomingo(hoje) && diasAtras <= 1) {
-    return { mensagem: ultima, situacao: 'recente', diasAtras }
+    return { mensagem, situacao: 'recente', diasAtras }
   }
 
   return {
-    mensagem: ultima,
+    mensagem,
     situacao: diasAtras <= DIAS_ATE_DEFASAGEM ? 'recente' : 'defasada',
     diasAtras,
   }

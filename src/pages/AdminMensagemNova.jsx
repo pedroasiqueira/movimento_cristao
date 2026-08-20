@@ -16,6 +16,7 @@ import {
 import { interpretarMensagem } from '@/lib/interpretarMensagem'
 import { multiplicadorInicial } from '@/lib/leitura'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useMensagem } from '@/hooks/useMensagens'
 
 /**
  * Cadastro e edição da Mensagem do Dia — Área Admin.
@@ -29,9 +30,14 @@ import { useTitulo } from '@/hooks/useTitulo'
 export default function AdminMensagemNova({ token }) {
   // Edição — a rota /admin/mensagem/editar/:data cai neste MESMO formulário
   // (FR-20): a mensagem abre preenchida, a data (o endereço permanente) fica
-  // travada e o envio vira PATCH em vez de POST.
+  // travada e o envio vira PATCH em vez de POST. A mensagem inteira desce
+  // sob demanda (o índice do site não carrega o corpo).
   const { data: dataEdicao } = useParams()
-  const original = dataEdicao ? buscarPorData(dataEdicao) : null
+  const { carregando, mensagem: original } = useMensagem(dataEdicao)
+
+  if (dataEdicao && carregando) {
+    return <p className="text-tinta-suave">Carregando a mensagem…</p>
+  }
 
   if (dataEdicao && !original) {
     return (
@@ -289,7 +295,9 @@ function Formulario({ token, original }) {
       }
       // Acervo em memória recarregado: publicada agora, ela já aparece na
       // home, no acervo e na busca. Programada fica invisível até a hora.
-      await carregarMensagens()
+      // `forcar` descarta os caches locais — a correção não pode conviver
+      // com uma cópia velha guardada (FR-20).
+      await carregarMensagens({ forcar: true })
       setSalva({
         data,
         titulo: titulo.trim(),
