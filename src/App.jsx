@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
+import BarraInferior from '@/components/BarraInferior'
 import Contato from '@/components/Contato'
 import Home from '@/pages/Home'
 import Acervo from '@/pages/Acervo'
@@ -19,9 +20,10 @@ const AdminMensagemNova = lazy(() => import('@/pages/AdminMensagemNova'))
 const AdminMusicaNova = lazy(() => import('@/pages/AdminMusicaNova'))
 
 export default function App() {
-  // A faixa do topo está fora de vista? Sinal único, medido no Cabecalho e
-  // consumido em dois lugares: a barra compacta do celular e o título que
-  // "desce" para o menu lateral no desktop.
+  // A faixa do topo está fora de vista? Sinal medido no Cabecalho, hoje com
+  // um consumidor só: o título que "desce" para o menu lateral no desktop.
+  // No celular ele não decide mais nada — a navegação de lá é a barra
+  // inferior, que está sempre visível.
   const [cabecalhoFora, setCabecalhoFora] = useState(false)
 
   // Identificação de administrador — o token JWT vem do POST /auth/login da
@@ -66,12 +68,17 @@ export default function App() {
         Ir direto para o conteúdo
       </a>
 
-      <Cabecalho
-        foraDeVista={cabecalhoFora}
-        aoMudar={setCabecalhoFora}
-        admin={admin}
-        aoSairAdmin={sairAdmin}
-      />
+      <Cabecalho aoMudar={setCabecalhoFora} admin={admin} aoSairAdmin={sairAdmin} />
+
+      {/* A navegação do celular fica aqui, e não dentro do Cabecalho, porque
+          deixou de ser cabeçalho: é barra fixa no pé da janela. Nesta posição
+          a ordem de leitura continua a de sempre — identidade, ajuste,
+          navegação, conteúdo — e o menu vem antes do <main> nas duas larguras,
+          como já acontece com o MenuLateral. Importa para quem usa teclado:
+          a 200% de zoom o viewport cai abaixo de lg, o MenuLateral some e
+          esta barra vira a ÚNICA navegação; se viesse por último, seria
+          preciso atravessar um Acervo inteiro para alcançá-la. */}
+      <BarraInferior />
 
       <Estrutura
         cabecalhoFora={cabecalhoFora}
@@ -173,8 +180,13 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
           </main>
         </div>
 
-        {/* Rodapé direto sobre o céu, alinhado à coluna de conteúdo. */}
-        <footer className="pt-2 pb-10">
+        {/* Rodapé direto sobre o céu, alinhado à coluna de conteúdo.
+            O pb-24 do celular é o que devolve o pé da página: a barra inferior
+            é fixa e, com os 40px de antes, taparia o caminho de contato
+            (FR-19) — o último elemento tocável do site. Folgado de propósito:
+            o min-h-12 da barra é um mínimo, e sobrar céu embaixo é inofensivo
+            enquanto faltar respiro é um link inalcançável. */}
+        <footer className="pt-2 pb-24 lg:pb-10">
           <div className="mx-auto max-w-5xl space-y-5 px-4 sm:px-6">
             {/* Caminho de contato visível também no rodapé — FR-19 */}
             <Contato />

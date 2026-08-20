@@ -114,11 +114,13 @@ html[data-escala="3"] { font-size: 23px; }
   estão na medida convencional e são outro eixo.
 
   DECLARAÇÃO CANÔNICA do piso de alvo de toque (§7): no modo padrão os
-  controles públicos têm no MÍNIMO 48px (min-h-12/size-12). Só há duas
-  isenções conscientes: (a) este modo compacto — 42px, escolha explícita
-  de quem abriu mão do dimensionamento acessível; (b) controles das telas
-  do admin (ferramenta do Publicador, não do público 60+). Comentários em
-  Cabecalho.jsx e ControleFonte.jsx apontam para cá.
+  controles públicos têm no MÍNIMO 48px (min-h-12/size-12), com 8px de
+  separação entre alvos. Só há duas isenções conscientes: (a) este modo
+  compacto — 42px de alvo e 7px de separação, pois a razão 0,21875/0,25
+  encolhe as duas medidas juntas; escolha explícita de quem abriu mão do
+  dimensionamento acessível; (b) controles das telas do admin (ferramenta
+  do Publicador, não do público 60+). Comentários em Cabecalho.jsx,
+  BarraInferior.jsx e ControleFonte.jsx apontam para cá.
 */
 html[data-compacto] { --spacing: 0.21875rem; }
 
@@ -198,6 +200,59 @@ body::before {
   bottom: 0;
   height: 4.5rem;
   background: linear-gradient(180deg, transparent, var(--papel));
+}
+
+/*
+  Barra inferior de navegação do celular — ver BarraInferior.jsx.
+
+  O RÓTULO. Em rem puro é impossível: numa janela de 320px cada coluna tem
+  53px úteis, e "Encontros" a 0,75rem já mede 58px — some o fim da palavra
+  justo para quem tem a tela menor. Então o tamanho é o MENOR entre o valor
+  de projeto (0,75rem = 12px, a medida de rótulo de barra de abas em que
+  Material e iOS convergiram, testada em polegar e vista cansada) e o que a
+  coluna comporta.
+
+  Consequência, medida no navegador: 12px cheios de 390px para cima (a
+  esmagadora maioria dos aparelhos), 11,5px em 360px e 10px em 320px — e
+  em nenhuma largura a palavra é cortada. O `truncate` do JSX é rede que
+  não deve disparar.
+
+  A conta: 20vw é a coluna (grid-cols-5), menos o m-1 dos dois lados. O
+  divisor 5,3 é a largura MEDIDA de "Encontros" (4,975em, a palavra mais
+  larga das cinco) mais 6% de folga para o font-semibold do item ativo.
+  Foi medido, e não estimado, porque a primeira versão errou por 4% e a
+  palavra apareceu cortada em 320px. Quem trocar a fonte de interface ou
+  acrescentar um item de menu mais longo precisa medir de novo.
+
+  O fallback do --spacing existe porque, sem ele, o token sumido
+  invalidaria a declaração inteira e o rótulo saltaria para 1rem.
+
+  ATENÇÃO: a conta supõe a faixa de ponta a ponta, SEM padding lateral no
+  <ul>. Quem acrescentar um respiro ali quebra o cálculo em silêncio.
+*/
+.barra-inferior .rotulo {
+  font-size: min(0.75rem, calc((20vw - var(--spacing, 0.25rem) * 2) / 5.3));
+  line-height: 1.35;
+}
+
+/*
+  O anel de foco global (acima) é azul e sai 2px para fora. Numa barra colada
+  em bottom:0 ele vazaria pela borda da tela — por baixo, e pelos lados nas
+  colunas das pontas —, e sobre o item ativo, que é bg-azul, azul sobre azul
+  simplesmente some. Duas correções escopadas: o anel vem para dentro, e no
+  item ativo troca para o branco (7,4:1 sobre o azul, o mesmo par do rótulo).
+*/
+.barra-inferior a:focus-visible { outline-offset: -3px; }
+.barra-inferior a[aria-current="page"]:focus-visible { outline-color: var(--papel); }
+
+/*
+  Uma barra fixa no pé tapa o que o navegador acabou de rolar até a vista —
+  WCAG 2.2, SC 2.4.11 (foco não obscurecido). O recuo vale só onde a barra
+  existe; rem em media query resolve sempre contra 16px, então 63.999rem
+  encosta no lg (64rem) do Tailwind sem sobrepor.
+*/
+@media (max-width: 63.999rem) {
+  html { scroll-padding-bottom: calc(var(--spacing, 0.25rem) * 18); }
 }
 
 /* Nenhuma animação para quem pediu menos movimento. */

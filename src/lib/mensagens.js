@@ -110,6 +110,13 @@ export function rotuloMes(iso) {
   return `${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`
 }
 
+/** "agosto" — só o nome do mês, para quando o ano já está dito ao lado.
+ *  Aceita 'AAAA-MM' (a chave dos grupos) e 'AAAA-MM-DD': lê o número direto
+ *  em vez de passar por paraData, que sem o dia devolveria Invalid Date. */
+export function nomeDoMes(iso) {
+  return MESES[Number(iso.slice(5, 7)) - 1]
+}
+
 const ordenar = (lista) => [...lista].sort((a, b) => b.data.localeCompare(a.data))
 
 /*
@@ -415,6 +422,23 @@ export function acervoPorMes(lista = acervo) {
     else grupos.push({ chave, rotulo: rotuloMes(m.data), itens: [m] })
   }
   return grupos
+}
+
+/**
+ * Os meses agrupados por ano, do mais recente ao mais antigo — FR-5.
+ * Cada ano: { ano: '2026', meses: [grupo de acervoPorMes, ...] }.
+ * Deriva de acervoPorMes em vez de reler as datas: os grupos ja chegam
+ * contiguos e ordenados, entao o mesmo at(-1) que agrupa mes agrupa ano.
+ */
+export function acervoPorAno(grupos = acervoPorMes()) {
+  const anos = []
+  for (const g of grupos) {
+    const ano = g.chave.slice(0, 4)
+    const ultimo = anos.at(-1)
+    if (ultimo?.ano === ano) ultimo.meses.push(g)
+    else anos.push({ ano, meses: [g] })
+  }
+  return anos
 }
 
 /**
