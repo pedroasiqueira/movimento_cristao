@@ -27,6 +27,11 @@ import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/esc
  * abaixo do z-50 do modo canto (a letra ampliada tem a tela inteira) e do
  * salto para o conteúdo quando focado.
  *
+ * O afastamento cresce, mas os BOTÕES param: 48px no primeiro degrau e teto
+ * de 56px (.pilula-fonte, no index.css, com a medição que motivou o teto).
+ * As duas coisas precisam ser assim — o afastamento acompanha a barra, que
+ * cresce; o botão não acompanha nada, porque cresce em cima do texto.
+ *
  * "A−" e "A+" em vez dos sinais soltos do controle do topo: lá o "1 de 4" ao
  * lado diz do que se trata, aqui um − sozinho poderia ser zoom, volume,
  * qualquer coisa. Sem indicador de nível e sem região viva própria — quem usa
@@ -50,11 +55,12 @@ import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/esc
 export default function ControleFonteFlutuante({ visivel }) {
   const escala = useSyncExternalStore(assinarEscala, escalaTexto)
 
-  // Alvo de 48px de §7, como em qualquer controle público (declaração
-  // canônica no index.css). Ghost porque as cores vêm todas daqui — não há
-  // variante do shadcn para brigar.
-  const alvo =
-    'size-12 rounded-full bg-azul text-base font-semibold text-white hover:bg-azul-escuro'
+  // O tamanho do botão NÃO está aqui: vem de .pilula-fonte, no index.css,
+  // porque tem piso (os 48px de §7) e teto (56px, para a pílula parar de
+  // comer linha de texto nos degraus altos) — e a conta com o porquê cabe
+  // melhor lá do que numa utilitária arbitrária. Ghost porque as cores vêm
+  // todas daqui: não há variante do shadcn para brigar.
+  const alvo = 'rounded-full bg-azul text-base font-semibold text-white hover:bg-azul-escuro'
 
   return (
     /* Invisível ela continua no DOM para o fade de saída existir — inert é o
@@ -65,7 +71,7 @@ export default function ControleFonteFlutuante({ visivel }) {
       aria-label="Tamanho da letra"
       inert={!visivel}
       className={
-        'fixed right-3 bottom-20 z-40 flex items-center gap-2 rounded-full border border-borda bg-papel p-1.5 shadow-xl transition-opacity duration-300 lg:hidden ' +
+        'pilula-fonte fixed right-3 bottom-20 z-40 flex items-center gap-2 rounded-full border border-borda bg-papel p-1.5 shadow-xl transition-opacity duration-300 lg:hidden ' +
         (visivel ? 'opacity-100' : 'pointer-events-none opacity-0')
       }
     >

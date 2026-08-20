@@ -152,6 +152,12 @@ html[data-escala="3"] { font-size: 23px; --tamanho-leitura: 2.12rem; }  /* 48,8p
   dimensionamento acessível; (b) controles das telas do admin (ferramenta
   do Publicador, não do público 60+). Comentários em Cabecalho.jsx,
   BarraInferior.jsx e ControleFonte.jsx apontam para cá.
+
+  E há UM teto, também consciente: a pílula flutuante do tamanho da letra
+  para de crescer em 56px (.pilula-fonte, mais abaixo). É o único controle do
+  site que flutua sobre o texto, então é o único em que crescer custa leitura.
+  Todo o resto continua crescendo com a interface, porque ali o espaço que
+  ocupa é espaço que já era dele.
 */
 html[data-compacto] { --spacing: 0.21875rem; --tamanho-leitura: 1.06rem; }  /* 17,0px */
 html[data-compacto][data-escala="1"] { --tamanho-leitura: 1.26rem; }       /* 22,7px */
@@ -337,6 +343,35 @@ body::before {
 */
 .barra-inferior a:focus-visible { outline-offset: -3px; }
 .barra-inferior a[aria-current="page"]:focus-visible { outline-color: var(--papel); }
+
+/*
+  Pílula flutuante do tamanho da letra — ver ControleFonteFlutuante.jsx.
+
+  TETO. Como toda utilitária de dimensão é calc(var(--spacing) * N), o alvo
+  crescia de 48px para 69px ao longo da escala. Medido num aparelho de 320px:
+  no último degrau a pílula passava a tapar 71% da largura da linha de texto,
+  contra 45% no primeiro — quase uma linha inteira escondida, e escondida
+  justamente de quem subiu a escala porque enxerga pouco. Ela é o ÚNICO
+  controle do site que flutua SOBRE o texto; nos outros, crescer não custa
+  leitura nenhuma.
+
+  E o crescimento não comprava conformidade: a WCAG 2.5.8 (AA, obrigatória)
+  pede 24px de alvo e a 2.5.5 (AAA) pede 44px — os 48px do primeiro degrau já
+  passam das duas. Os 21px extras eram perda pura.
+
+  O teto vai em PX de propósito: em rem ele cresceria junto com o resto e não
+  seria teto nenhum. E vai nos BOTÕES, nunca no contêiner — lá moram right-3 e
+  bottom-20, que também dependem de --spacing, e capá-los encolheria o
+  afastamento do rodapé para 93px bem quando a barra inferior mede 94px: a
+  pílula sumiria atrás dela. O min() preserva o modo compacto, que continua
+  entrando em 42px pela isenção declarada mais acima.
+
+  Resultado: 48 / 54 / 56 / 56px nos quatro degraus.
+*/
+.pilula-fonte button {
+  width: min(calc(var(--spacing, 0.25rem) * 12), 56px);
+  height: min(calc(var(--spacing, 0.25rem) * 12), 56px);
+}
 
 /*
   Uma barra fixa no pé tapa o que o navegador acabou de rolar até a vista —
