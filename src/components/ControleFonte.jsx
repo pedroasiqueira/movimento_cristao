@@ -1,34 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-
-const CHAVE = 'mc:escala-texto'
-const MAX = 3
+import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/escala'
 
 /**
- * Controle global de tamanho de texto — FR-17.
+ * Controle global de tamanho de texto — FR-17. A forma completa, com rótulo e
+ * indicador: vive no menu lateral (desktop) e na faixa do topo (celular).
  *
- * Mexe no font-size do <html>; como todo o CSS do site usa rem, o site inteiro
- * acompanha. A preferência fica no navegador, sem cadastro.
- *
- * Limite conhecido, registrado no PRD: o caminho de acesso previsto é abrir o
- * link de dentro do WhatsApp, cujo navegador embutido isola o armazenamento e
- * pode descartá-lo entre sessões. Por isso o mecanismo principal de
- * acessibilidade não é este controle, e sim o site respeitar a escala de fonte
- * já configurada no aparelho — o que o uso de rem garante.
+ * O mecanismo e o porquê do rem estão em lib/escala.js, onde mora o estado —
+ * compartilhado porque este controle tem irmãos na tela (a pílula flutuante
+ * do celular, ControleFonteFlutuante.jsx) e todos precisam contar a mesma
+ * história.
  */
 export default function ControleFonte() {
-  const [escala, setEscala] = useState(0)
-
-  useEffect(() => {
-    const salvo = Number(localStorage.getItem(CHAVE) ?? 0)
-    if (salvo > 0) setEscala(Math.min(salvo, MAX))
-  }, [])
-
-  useEffect(() => {
-    document.documentElement.dataset.escala = String(escala)
-    localStorage.setItem(CHAVE, String(escala))
-  }, [escala])
+  const escala = useSyncExternalStore(assinarEscala, escalaTexto)
 
   // O alvo de 48px vem de §7 e é maior que qualquer size do shadcn, por isso a
   // altura vai explícita em vez de usar size="icon". (No modo compacto cai
@@ -42,7 +27,7 @@ export default function ControleFonte() {
         <Button
           variant="outline"
           className={alvo}
-          onClick={() => setEscala((e) => Math.max(0, e - 1))}
+          onClick={() => ajustarEscala(-1)}
           disabled={escala === 0}
           aria-label="Diminuir o tamanho da letra"
         >
@@ -54,14 +39,14 @@ export default function ControleFonte() {
           role="status"
           aria-live="polite"
         >
-          {escala + 1} de {MAX + 1}
+          {escala + 1} de {ESCALA_MAX + 1}
         </span>
 
         <Button
           variant="outline"
           className={alvo}
-          onClick={() => setEscala((e) => Math.min(MAX, e + 1))}
-          disabled={escala === MAX}
+          onClick={() => ajustarEscala(1)}
+          disabled={escala === ESCALA_MAX}
           aria-label="Aumentar o tamanho da letra"
         >
           <Plus aria-hidden />

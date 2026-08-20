@@ -6,10 +6,14 @@ import { API_URL } from './config'
 import { carregarMensagens, iniciarMensagens } from './lib/mensagens'
 import { carregarMusicas } from './lib/musicas'
 import { compactoAtivo } from './lib/compacto'
+import { aplicarEscalaInicial } from './lib/escala'
 
-// Preferência de interface compacta aplicada ANTES do primeiro render —
-// nada pintado ainda, então não há flash de tamanho.
+// Preferências de dimensionamento aplicadas ANTES do primeiro render — nada
+// pintado ainda, então não há flash de tamanho. Valem para os dois eixos:
+// a interface compacta e a escala de texto (FR-17), que sem isto só entrava
+// depois da primeira pintura e fazia a página saltar de 16px para 23px.
 if (compactoAtivo()) document.documentElement.dataset.compacto = ''
+aplicarEscalaInicial()
 
 // A conexão com a API começa a ser negociada (DNS/TLS) junto com o render,
 // não depois dele — em rede lenta isso adianta o destaque em até um segundo.
