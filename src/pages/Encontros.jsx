@@ -4,6 +4,7 @@ import { porExtenso } from '@/lib/mensagens'
 import { HORARIO_ENCONTROS, ENDERECO_ENCONTROS } from '@/config'
 import Contato from '@/components/Contato'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useMontado } from '@/hooks/useMontado'
 
 /**
  * Encontros — FR-15. Publica o que já se sabe (dias e modalidades) e declara
@@ -13,7 +14,10 @@ import { useTitulo } from '@/hooks/useTitulo'
  */
 export default function Encontros() {
   useTitulo('Encontros')
-  const proximos = proximosEncontros(4)
+  // A lista sai do relógio de quem lê, não do relógio do build — ver
+  // useMontado. O resto da página é fixo e vem pronto no HTML.
+  const montado = useMontado()
+  const proximos = montado ? proximosEncontros(4) : []
 
   return (
     <>
@@ -57,6 +61,12 @@ export default function Encontros() {
 
       <h2 className="mt-10 text-lg font-semibold text-azul-escuro">Próximos encontros</h2>
       <ul className="mt-3 space-y-2">
+        {/* Altura reservada: são sempre quatro, e sem isto o "Quer participar?"
+            saltaria quando as datas entrassem. */}
+        {!montado &&
+          [...Array(4)].map((_, i) => (
+            <li key={i} aria-hidden className="h-[3.25rem] animate-pulse rounded-lg bg-papel-suave" />
+          ))}
         {proximos.map(({ data, cancelado }) => (
           <li
             key={data}

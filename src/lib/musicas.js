@@ -4,7 +4,7 @@ import { notificar } from './store'
 
 /*
  * As Músicas nascem dos JSONs empacotados (reserva) e são trocadas pelo banco
- * em carregarMusicas(), chamada antes do primeiro render (main.jsx). Schema:
+ * em carregarMusicas(), chamada sob demanda por garantirMusicas(). Schema:
  * id (slug do endereço), titulo, autores (lista, possivelmente vazia — FR-13),
  * secoes com tipo 'estrofe' | 'refrao' e linhas (versos preservados — FR-11).
  */
@@ -52,6 +52,30 @@ export async function carregarMusicas() {
   } catch (erro) {
     console.warn('API indisponível — usando os dados empacotados.', erro)
   }
+}
+
+/*
+ * As Músicas saíram do boot (análise de 20/08/2026): eram uma terceira ida à
+ * API disputando espaço com o destaque, numa origem de 1,1 s de TTFB, para uma
+ * página que a maioria dos visitantes não abre. Agora descem quando alguém
+ * entra em /musicas — e no ócio, depois da primeira pintura.
+ *
+ * A promessa é guardada: as duas telas de música podem pedir sem virar duas
+ * requisições.
+ */
+let promessaMusicas = null
+export function garantirMusicas() {
+  promessaMusicas ??= carregarMusicas()
+  return promessaMusicas
+}
+
+/** Semeia o repertório — o que o HTML pré-renderizado embute e o que o
+ *  servidor usa antes de renderizar. Escreve tudo de uma vez, como semear()
+ *  de lib/mensagens.js, para não vazar estado entre páginas. */
+export function semearMusicas(lista) {
+  if (!Array.isArray(lista) || lista.length === 0) return
+  todas = lista
+  repertorio = ordenar(todas.filter((m) => !m.despublicada))
 }
 
 /** Devolve também as despublicadas: a página é quem exibe o aviso — FR-21. */

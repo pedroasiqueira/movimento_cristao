@@ -7,3 +7,6 @@ dist
 
 # Reserva empacotada, gerada por scripts/gerar-reserva.mjs no build
 public/dados/
+
+# Bundle descartável da geração do HTML (scripts/prerender.mjs o apaga no fim)
+dist-ssr

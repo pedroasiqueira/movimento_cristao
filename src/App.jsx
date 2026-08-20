@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
 import BarraInferior from '@/components/BarraInferior'
@@ -31,14 +31,20 @@ export default function App() {
   // API (7 dias). A presença do token controla o que a interface MOSTRA;
   // a proteção real é da API, que rejeita escrita sem token válido. Se o
   // token expirar, a próxima gravação devolve 401 e a tela pede novo login.
-  const [tokenAdmin, setTokenAdmin] = useState(() => {
+  // Nasce null e é lido na montagem, não no inicializador do useState: o
+  // inicializador roda DURANTE o render, e fora do navegador não há
+  // localStorage. Também evita que o primeiro render do publicador (com
+  // token) divirja do HTML pré-renderizado (sem token). Custo: a área admin
+  // aparece um quadro depois — para uma pessoa só, não custa nada.
+  const [tokenAdmin, setTokenAdmin] = useState(null)
+  useEffect(() => {
     try {
       localStorage.removeItem('mc:admin') // chave da fase sem backend, aposentada
-      return localStorage.getItem('mc:token')
+      setTokenAdmin(localStorage.getItem('mc:token'))
     } catch {
-      return null
+      // Sem armazenamento (navegador embutido restrito): segue deslogado.
     }
-  })
+  }, [])
   const admin = Boolean(tokenAdmin)
 
   function entrarAdmin(token) {
@@ -59,8 +65,11 @@ export default function App() {
     setTokenAdmin(null)
   }
 
+  /* Sem <BrowserRouter> aqui: quem fornece o router é main.jsx (navegador) ou
+     entry-server.jsx (geração do HTML, com StaticRouter). O App precisa servir
+     aos dois. */
   return (
-    <BrowserRouter>
+    <>
       <VoltarAoTopo />
       <a
         href="#conteudo"
@@ -95,7 +104,7 @@ export default function App() {
           (identidade, ajuste, navegação, conteúdo) e não põe mais uma parada
           de teclado antes do conteúdo. */}
       <ControleFonteFlutuante visivel={cabecalhoFora} />
-    </BrowserRouter>
+    </>
   )
 }
 

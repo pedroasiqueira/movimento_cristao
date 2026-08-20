@@ -1,8 +1,9 @@
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Pencil } from 'lucide-react'
 import Mensagem from '@/components/Mensagem'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
-import { vizinhas, porNumero } from '@/lib/mensagens'
+import { garantirIndice, vizinhas, porNumero } from '@/lib/mensagens'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useMensagem } from '@/hooks/useMensagens'
 
@@ -23,6 +24,14 @@ export default function MensagemPagina({ admin }) {
   const { data } = useParams()
   const { carregando, mensagem, situacao } = useMensagem(data ?? '')
   useTitulo(mensagem?.titulo)
+
+  // As Mensagens anterior e seguinte (FR-5) saem do índice, que não vem mais
+  // no boot. Elas ficam abaixo da leitura inteira: pedir aqui não atrasa nada
+  // do que importa, e a página repinta sozinha quando o índice chega
+  // (useMensagem assina a store).
+  useEffect(() => {
+    void garantirIndice()
+  }, [])
 
   if (!mensagem) {
     if (carregando) {

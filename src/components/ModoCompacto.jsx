@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { assinarCompacto, compactoAtivo, definirCompacto } from '@/lib/compacto'
+import { assinarCompacto, compactoAtivo, compactoServidor, definirCompacto } from '@/lib/compacto'
 
 /*
  * Opção discreta no fim dos menus (lateral no desktop, faixa no celular) —
@@ -21,7 +21,7 @@ import { assinarCompacto, compactoAtivo, definirCompacto } from '@/lib/compacto'
 export default function ModoCompacto() {
   // Duas instâncias sempre montadas — o estado vem do store para as duas
   // mostrarem sempre o mesmo rótulo.
-  const ativo = useSyncExternalStore(assinarCompacto, compactoAtivo)
+  const ativo = useSyncExternalStore(assinarCompacto, compactoAtivo, compactoServidor)
   const rotulo = ativo
     ? 'Voltar ao tamanho padrão (maior)'
     : 'Reduzir o tamanho da interface'

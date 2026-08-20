@@ -4,7 +4,7 @@ import { Maximize2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import Letra from '@/components/Letra'
-import { buscarMusica } from '@/lib/musicas'
+import { buscarMusica, garantirMusicas } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
 
@@ -16,6 +16,11 @@ import { useDadosVivos } from '@/hooks/useMensagens'
 export default function MusicaPagina() {
   const { id } = useParams()
   useDadosVivos() // re-render quando as músicas do banco chegarem
+  // Antes do return antecipado de "não encontrada": um endereço de música
+  // aberto direto precisa pedir o repertório, que não vem mais no boot.
+  useEffect(() => {
+    void garantirMusicas()
+  }, [])
   const musica = buscarMusica(id ?? '')
   const [modoCanto, setModoCanto] = useState(false)
   useTitulo(musica?.titulo)

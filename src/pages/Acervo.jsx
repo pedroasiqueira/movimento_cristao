@@ -4,7 +4,7 @@ import { Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import CartaoMensagem from '@/components/CartaoMensagem'
 import FiltroMes from '@/components/FiltroMes'
-import { acervo, acervoPorMes, estadoAcervo, tagsEmUso } from '@/lib/mensagens'
+import { acervo, acervoPorMes, estadoAcervo, garantirIndice, tagsEmUso } from '@/lib/mensagens'
 import { buscarMensagens } from '@/lib/busca'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
@@ -49,6 +49,14 @@ export default function Acervo() {
   // binding externo só confundiria o rastreio de dependências.
   const tags = tagsEmUso()
   const { carregando } = estadoAcervo()
+
+  // O índice não vem mais no boot (custava 11,8 KB e um segundo caminho de
+  // rede competindo com a Mensagem do dia). Esta é a tela que vive dele, então
+  // é ela que o pede. Enquanto não chega, o aviso de carregamento abaixo é o
+  // que a pessoa vê — e a pré-busca ociosa de main.jsx costuma chegar antes.
+  useEffect(() => {
+    void garantirIndice()
+  }, [])
 
   // Chegou por link com ?tag= (da home ou de uma Mensagem): painel à vista.
   useEffect(() => {

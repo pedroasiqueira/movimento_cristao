@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
-import { filtrarMusicas, repertorio } from '@/lib/musicas'
+import { filtrarMusicas, garantirMusicas, repertorio } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
 
@@ -16,6 +16,11 @@ export default function Musicas() {
   // Re-render quando as músicas do banco substituírem a reserva empacotada;
   // sem memo — o repertório é pequeno e o filtro custa menos que rastreá-lo.
   useDadosVivos()
+  // As músicas saíram do boot: quem entra aqui é que as pede. Até chegarem,
+  // vale a reserva empacotada com que o módulo já nasce.
+  useEffect(() => {
+    void garantirMusicas()
+  }, [])
   const resultado = filtrarMusicas(consulta)
   const soExemplos = repertorio.every((m) => m.exemplo)
 

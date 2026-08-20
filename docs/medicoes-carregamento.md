@@ -59,3 +59,93 @@ Acima de ~150 KB gz de índice (~12.000 mensagens), ativar o cursor que já exis
 1. **Site primeiro** (`npm run build && npm run deploy-cloud`): o site novo tolera a API antiga (formato de lista normalizado, destaque/busca com fallback).
 2. **API depois**: a partir daí o site novo usa os endpoints novos. (O site *antigo* contra a API nova cairia na reserva — funciona, mas evite essa ordem.)
 3. Em produção da API, após o deploy: `node dist/scripts/backfill-termos.js` (ou via ts-node) — **já rodado em 19/08/2026**; repetir apenas se o vocabulário de `busca.util.ts` mudar.
+
+---
+
+# Segunda rodada — pré-renderização (20/08/2026)
+
+Corpus: **959 mensagens**. Plano: `~/.claude/plans/wild-puzzling-balloon.md`.
+
+A primeira rodada resolveu o **transporte dos dados**: a API deixou de enviar as
+900+ mensagens completas. Medindo a produção no dia seguinte, o peso tinha
+migrado — não estava mais nos dados, estava no bundle e no encadeamento.
+
+## O que a medição em produção mostrou (antes desta rodada)
+
+| | bytes no fio (br) |
+|---|---:|
+| `index.html` (vazio) | 823 |
+| **`index-*.js`** | **97.686** |
+| `index-*.css` | 6.979 |
+| `GET /mensagens/destaque` | 2.067 |
+| `GET /mensagens` (índice) | 11.832 |
+| `GET /musicas` | 643 |
+| **total** | **~120 KB — 81% JavaScript** |
+
+Latência medida: Cloudflare Pages TTFB **0,23 s**; API no Railway TTFB **1,1 s**,
+dos quais **0,63 s só de DNS+TCP+TLS**. Em conexão cabeada.
+
+Composição do bundle (minificado): react-dom 180.500 (**57,5%**), código do app
+58.172, tailwind-merge 27.426, react-router 24.300, lucide+radix 10.414 (já
+tree-shaken). Não havia gordura de biblioteca para cortar.
+
+## Depois
+
+| Caminho até o primeiro pixel | Antes | Depois |
+|---|---|---|
+| Link de Mensagem (WhatsApp) | 823 + 97.686 (JS) + 6.979 (CSS) + 2.067 (API, TTFB 1,1 s) — **em série** | **6.641 (HTML com a mensagem) + 6.901 (CSS)** |
+| Home | idem | **6.565 + 6.901** |
+
+**~107 KB em série → 13,5 KB, sem esperar JavaScript e sem esperar a API.**
+O bundle continua descendo, mas para hidratar — não para mostrar o texto.
+
+| | Antes | Depois |
+|---|---|---|
+| Páginas em `dist/` | 1 | **966** (959 mensagens + home + acervo + músicas + 2 letras + encontros + sobre) |
+| `dist/` total | 556 KB | ~30 MB (5–7 KB brotli por página) |
+| Requisições à API no boot | 3, em qualquer rota | **1** (o destaque); índice e músicas no ócio ou na rota que os usa |
+| Assets com hash | `max-age=0, must-revalidate` (um 304 por visita) | `immutable` via `public/_headers` |
+| `og:title` por Mensagem | não (card genérico) | **sim** — FR-3/FR-14 |
+| Tempo de build | ~12 s | ~30 s |
+
+## Verificado (chromium headless, build de produção, host estático simulado)
+
+| Cenário | Resultado |
+|---|---|
+| **Sem JavaScript**, `/mensagem/2026-08-18` | 4.629 caracteres visíveis, corpo da Mensagem presente — o teste definitivo do pré-render |
+| Hidratação em `/`, `/mensagem/:data`, `/acervo`, `/encontros` | **nenhum aviso de divergência**, com a API de pé e com a API fora |
+| Rota sem página gerada (`/mensagem/2030-01-01`) | fallback serve a home; a guarda de rota cai em `createRoot` e o site age como antes — sem divergência |
+| Escala de letra no degrau 3, recarregar | `<html data-escala="3">` aplicado pelo script embutido, antes de qualquer pintura |
+| Build com a API fora do ar | completa pelo corpus versionado (958 mensagens), **não quebra** — `dist/dados/build.json` registra `fonte: "corpus"` |
+
+## Decisões registradas
+
+* **Sem rebuild automático** (deploy hook ou cron), por decisão do Pedro. Uma
+  Mensagem publicada só ganha página própria no próximo push; até lá o fallback
+  do host a serve normalmente. Isso **só é gratuito** porque nenhuma data vive
+  no HTML: o aviso de FR-2, o próximo Encontro e a lista de `/encontros` estão
+  atrás de `useMontado` e são calculados no navegador de quem lê.
+* **Sem `lazy()` nas rotas públicas**: valeria ~6 KB brotli, mas hidratar uma
+  rota `lazy()` troca o conteúdo pré-renderizado pelo "Carregando…" — o flash
+  que o pré-render existe para evitar.
+* **`preact/compat`, eliminar `tailwind-merge` e service worker ficam fora**:
+  depois do pré-render o bundle saiu do caminho do primeiro pixel, e os três
+  têm risco desproporcional ao que ainda rendem.
+
+## Pendências
+
+* **`public/og.png` (1200×630)** não existe. Enquanto faltar, o gerador avisa no
+  build e **omite** `og:image` — o card sai sem miniatura. O rastreador do
+  WhatsApp não renderiza SVG, então o favicon não serve. Posto o arquivo, a tag
+  aparece sozinha, sem mexer em código.
+* **`SITE_URL`** precisa existir nas variáveis do Cloudflare Pages, senão
+  `og:url` e `canonical` saem de fora.
+* **Conferir o `_headers` em produção** depois do deploy — o Pages já teve
+  versões que ignoravam `Cache-Control` ali:
+  `curl -sI https://movimento-cristao.pages.dev/assets/index-*.js | grep -i cache-control`
+* **Aparelho antigo de verdade** — continua aberta desde a primeira rodada. O
+  piso caiu para ~Safari 13.1 (`build.target` + `src/lib/compat.js`), mas
+  ninguém abriu o site num aparelho real.
+* Qualquer mudança de código reescreve as 966 páginas (o nome hasheado do JS
+  está em todas), e o upload sobe ~30 MB. Mudança só de conteúdo reescreve
+  poucos arquivos.

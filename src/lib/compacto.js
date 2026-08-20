@@ -37,6 +37,10 @@ export function definirCompacto(ativo) {
  * fonte de verdade compartilhada, alternar numa deixaria o rótulo da outra
  * mentindo. Mesma razão pela qual a escala de texto virou lib/escala.js.
  */
+/* Mesmo contrato de escalaServidor (lib/escala.js): sem navegador não há
+   preferência, e o <html data-compacto> já foi aplicado pelo script do <head>. */
+export const compactoServidor = () => false
+
 export function assinarCompacto(avisar) {
   ouvintes.add(avisar)
   return () => ouvintes.delete(avisar)

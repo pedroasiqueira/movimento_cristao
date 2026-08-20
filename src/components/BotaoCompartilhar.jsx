@@ -9,9 +9,12 @@ import { Button } from '@/components/ui/button'
  */
 export default function BotaoCompartilhar({ titulo, caminho, rotulo = 'Compartilhar' }) {
   const [copiado, setCopiado] = useState(false)
-  const url = `${window.location.origin}${caminho}`
 
   async function compartilhar() {
+    // O endereço só é preciso no clique. Calculá-lo no corpo do render tornava
+    // este componente irrenderizável fora do navegador — e ele está na home e
+    // na página de cada Mensagem, que são justamente as pré-renderizadas.
+    const url = `${window.location.origin}${caminho}`
     if (navigator.share) {
       try {
         await navigator.share({ title: titulo, url })

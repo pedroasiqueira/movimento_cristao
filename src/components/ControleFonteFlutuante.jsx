@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
-import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/escala'
+import { ajustarEscala, assinarEscala, escalaServidor, escalaTexto, ESCALA_MAX } from '@/lib/escala'
 
 /**
  * Escala de texto ao alcance da mão enquanto se lê — celular e tablet.
@@ -53,7 +53,7 @@ import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/esc
  * preço de tirar mais uma faixa de tela de todo mundo o tempo inteiro.
  */
 export default function ControleFonteFlutuante({ visivel }) {
-  const escala = useSyncExternalStore(assinarEscala, escalaTexto)
+  const escala = useSyncExternalStore(assinarEscala, escalaTexto, escalaServidor)
 
   // O tamanho do botão NÃO está aqui: vem de .pilula-fonte, no index.css,
   // porque tem piso (os 48px de §7) e teto (56px, para a pílula parar de

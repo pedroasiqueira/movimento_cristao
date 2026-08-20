@@ -7,7 +7,7 @@ import { apiEnviar } from '@/lib/api'
 import {
   CITACAO,
   buscarPorData,
-  carregarMensagens,
+  recarregarTudo,
   emBlocos,
   hojeNoMovimento,
   porExtenso,
@@ -296,7 +296,7 @@ function Formulario({ token, original }) {
       // home, no acervo e na busca. Programada fica invisível até a hora.
       // `forcar` descarta os caches locais — a correção não pode conviver
       // com uma cópia velha guardada (FR-20).
-      await carregarMensagens({ forcar: true })
+      await recarregarTudo()
       setSalva({
         data,
         titulo: titulo.trim(),

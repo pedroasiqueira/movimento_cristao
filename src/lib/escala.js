@@ -72,12 +72,17 @@ export function ajustarEscala(passo) {
   definirEscala(atual + passo)
 }
 
+/* Fora do navegador não há preferência guardada, e o primeiro render do
+   cliente precisa concordar com o do servidor — quem aplica a escala real
+   antes de qualquer pintura é o script embutido no <head> (index.html). */
+export const escalaServidor = () => 0
+
 export function assinarEscala(avisar) {
   ouvintes.add(avisar)
   return () => ouvintes.delete(avisar)
 }
 
-/** main.jsx, antes do primeiro render — nada pintado, nenhum flash de tamanho. */
-export function aplicarEscalaInicial() {
-  document.documentElement.dataset.escala = String(atual)
-}
+/* Não há mais "aplicar a escala inicial" em JavaScript: com o HTML já
+   pintado quando o módulo roda, isso chegaria tarde e a página saltaria de
+   tamanho. Quem aplica o data-escala antes de qualquer pintura é o script
+   embutido no <head> (index.html); aqui o valor só é lido para os controles. */

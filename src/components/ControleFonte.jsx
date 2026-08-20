@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
-import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/escala'
+import { ajustarEscala, assinarEscala, escalaServidor, escalaTexto, ESCALA_MAX } from '@/lib/escala'
 
 /**
  * O controle de tamanho de texto do site — FR-17. A forma completa, com
@@ -27,7 +27,7 @@ import { ajustarEscala, assinarEscala, escalaTexto, ESCALA_MAX } from '@/lib/esc
  * jornal e site de banco, e é o mesmo desenho da pílula flutuante.
  */
 export default function ControleFonte() {
-  const escala = useSyncExternalStore(assinarEscala, escalaTexto)
+  const escala = useSyncExternalStore(assinarEscala, escalaTexto, escalaServidor)
 
   // O alvo de 48px vem de §7 e é maior que qualquer size do shadcn, por isso a
   // altura vai explícita em vez de usar size="icon". (No modo compacto cai

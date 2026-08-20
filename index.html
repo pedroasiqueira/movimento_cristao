@@ -4,25 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Ícone do site: a estrela de 9 pontas. SVG é o principal (nítido em
-         qualquer densidade de tela); o PNG serve a tela de início do iOS,
-         que não aceita SVG. -->
+    <!-- Dimensionamento (FR-17) antes de qualquer pintura — ver src/lib/escala.js. -->
+    <script>
+      try {
+        var d = document.documentElement
+        if (localStorage.getItem('mc:compacto') === '1') d.dataset.compacto = ''
+        var e = Math.trunc(Number(localStorage.getItem('mc:escala-texto'))) || 0
+        d.dataset.escala = String(Math.min(Math.max(e, 0), 3))
+      } catch (_) {
+        // Sem armazenamento (navegador embutido restrito): o padrão do site.
+        document.documentElement.dataset.escala = '0'
+      }
+    </script>
+
+    <!-- Estrela de 9 pontas. O PNG serve a tela de início do iOS, que não aceita SVG. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Substituído por página em scripts/prerender.mjs — não editar os marcadores. -->
+    <!--mc:head-->
     <title>Arca da Sagrada Aliança – Movimento Cristão</title>
     <meta
       name="description"
       content="Mensagens diárias, músicas e encontros da Arca da Sagrada Aliança – Movimento Cristão, de Natal/RN."
     />
-
-    <!--
-      Pré-visualização ao compartilhar o link no WhatsApp.
-      LIMITAÇÃO CONHECIDA: como isto é uma SPA, todas as páginas servem este
-      mesmo HTML. O rastreador do WhatsApp não executa JavaScript, então o link
-      de uma Mensagem específica mostra estes dados genéricos, e não o título
-      dela. Cumprir FR-3 e FR-14 exige pré-renderização por endereço — ver
-      PRD §7. Pendência registrada antes do lançamento.
-    -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Arca da Sagrada Aliança – Movimento Cristão" />
     <meta
@@ -30,6 +35,7 @@
       content="A mensagem de hoje, o acervo completo, as músicas e os encontros."
     />
     <meta property="og:locale" content="pt_BR" />
+    <!--/mc:head-->
   </head>
   <body>
     <div id="root"></div>

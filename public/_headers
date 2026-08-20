@@ -1,0 +1,19 @@
+# Cabeçalhos do host estático (Cloudflare Pages). O arquivo é copiado literal
+# de public/ para dist/ pelo Vite.
+#
+# Sem regra /* de propósito: o default do Pages para HTML já é
+# `max-age=0, must-revalidate`, que é o que queremos — um deploy novo precisa
+# entrar na próxima visita. Uma regra a menos é uma incerteza a menos sobre
+# precedência entre regras sobrepostas.
+
+# Nome com hash de conteúdo: revalidar é desperdício puro. Sem isto o Pages
+# manda `max-age=0, must-revalidate` e cada visita paga uma ida e volta por
+# arquivo só para ouvir 304 — em 3G, mais de um segundo.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# A reserva empacotada NÃO pode ser immutable: indice.json e recentes.json têm
+# nome fixo e são reescritos a cada build (scripts/gerar-reserva.mjs). A política
+# espelha a que a API usa nas rotas equivalentes.
+/dados/*
+  Cache-Control: public, max-age=300, stale-while-revalidate=86400

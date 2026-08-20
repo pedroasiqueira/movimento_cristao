@@ -6,6 +6,7 @@ import { destaqueDaHome, estadoDestaque, porExtenso } from '@/lib/mensagens'
 import { proximosEncontros } from '@/lib/encontros'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
+import { useMontado } from '@/hooks/useMontado'
 import sobre from '@/data/sobre.json'
 
 /**
@@ -87,6 +88,12 @@ function SemDestaque({ situacao }) {
   anterior é de hoje. Domingo não é atraso: a Mensagem de domingo vem em áudio.
 */
 function Aviso({ situacao, data, diasAtras }) {
+  // "Esta mensagem é de hoje?" só o relógio de quem lê responde — a data do
+  // build não serve (useMontado). Enquanto não monta, o espaço fica reservado:
+  // o aviso nasce ACIMA do título, e sem a reserva ele empurraria a leitura
+  // inteira para baixo ao aparecer.
+  const montado = useMontado()
+  if (!montado) return <div aria-hidden className="mb-6 min-h-[4.5rem]" />
   if (situacao === 'hoje') return null
 
   if (situacao === 'recente') {
@@ -181,6 +188,10 @@ function PreviaDaMensagem({ mensagem }) {
 }
 
 function ProximoEncontro() {
+  const montado = useMontado()
+  // Mesma razão do Aviso: a próxima quarta ou sábado depende de que dia é
+  // hoje. A altura é a do bloco pronto, para nada saltar abaixo dele.
+  if (!montado) return <div aria-hidden className="mt-10 h-[4.75rem] rounded-lg bg-papel-suave" />
   const proximo = proximosEncontros(4).find((e) => !e.cancelado)
   if (!proximo) return null
 

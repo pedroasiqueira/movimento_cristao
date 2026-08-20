@@ -147,7 +147,7 @@ let hojeServidor = null
 let mensagemDestaque = null
 let carregandoDestaque = true
 let carregandoIndice = true
-const completas = new Map()
+let completas = new Map()
 
 /** Documento da API → forma que as páginas usam (só os campos do schema). */
 const daApi = (m) => ({
@@ -180,17 +180,56 @@ function reservaRecentes() {
 }
 
 /**
- * Antes do primeiro render (main.jsx), síncrono e barato: a segunda visita
- * pinta a home com o destaque guardado no localStorage, antes de qualquer
- * requisição — e atualiza por trás.
+ * Semeia TODO o estado de módulo de uma vez — o que o HTML pré-renderizado
+ * embute e o que o servidor usa antes de renderizar cada página.
+ *
+ * Escreve todos os campos em toda chamada, inclusive null e []: NUNCA
+ * atualização parcial. É essa regra, e só ela, que impede a mensagem de uma
+ * página vazar para a seguinte quando as 958 são renderizadas no mesmo
+ * processo Node. Pelo mesmo motivo `completas` vira um Map NOVO em vez de
+ * .clear() — assim nenhuma referência antiga sobrevive, e a memória fica O(1).
+ */
+export function semear({
+  hoje = null,
+  total = 0,
+  destaque = null,
+  indice = [],
+  indiceCompleto = false,
+  mensagem = null,
+} = {}) {
+  hojeServidor = hoje
+  totalAcervo = total
+  mensagemDestaque = destaque
+  acervo = ordenar(indice)
+  completas = new Map()
+  if (destaque) completas.set(destaque.data, destaque)
+  if (mensagem) completas.set(mensagem.data, mensagem)
+  carregandoDestaque = destaque === null
+  carregandoIndice = !indiceCompleto
+}
+
+/** Leitura SÍNCRONA da memória: é o que dá ao primeiro render do cliente a
+ *  mesma mensagem que o servidor viu, sem o que a hidratação divergiria. */
+export function mensagemSincrona(data) {
+  return data ? (completas.get(data) ?? null) : null
+}
+
+/**
+ * O destaque guardado da visita anterior. Roda DEPOIS da hidratação (main.jsx):
+ * antes do primeiro render ele faria o cliente pintar algo diferente do HTML.
+ *
+ * Só substitui o que veio pré-renderizado se for mais novo — senão um
+ * localStorage de duas semanas atrás rebaixaria uma home fresca. A precedência
+ * é: HTML embutido → localStorage → API.
  */
 export function iniciarMensagens() {
   const guardado = lerDestaqueLocal()
-  if (guardado?.mensagem) {
-    mensagemDestaque = guardado.mensagem
-    totalAcervo = guardado.total ?? 0
-    carregandoDestaque = false
-  }
+  if (!guardado?.mensagem) return
+  if (mensagemDestaque && guardado.mensagem.data <= mensagemDestaque.data) return
+  mensagemDestaque = guardado.mensagem
+  totalAcervo = guardado.total ?? totalAcervo
+  carregandoDestaque = false
+  notificar()
 }
 
 /** A resposta da lista, venha do formato novo ({total, itens}) ou de uma API
@@ -283,17 +322,40 @@ async function carregarIndice(forcar = false) {
 }
 
 /**
- * Carrega destaque e índice, cada um com sua reserva — o site nunca abre
- * vazio (FR-2) e nunca lança. Chamada no boot (main.jsx, SEM await: o render
- * não espera) e após salvar no admin — aí com { forcar: true }, que descarta
- * os caches locais para a correção (FR-20) aparecer de imediato.
+ * O destaque — a única coisa que o boot ainda pede com pressa. Nunca lança:
+ * API → cache local → reserva empacotada, e o site nunca abre vazio (FR-2).
  */
-export async function carregarMensagens({ forcar = false } = {}) {
-  if (forcar) {
-    completas.clear()
-    await limparCache()
-  }
-  await Promise.allSettled([carregarDestaque(forcar), carregarIndice(forcar)])
+export function garantirDestaque() {
+  return carregarDestaque()
+}
+
+/*
+ * O índice saiu do boot (análise de 20/08/2026): ele custava 11,8 KB e um
+ * segundo caminho de rede competindo com o destaque pela mesma conexão, e não
+ * pinta pixel nenhum na home nem na página de uma Mensagem. Agora desce quando
+ * alguém precisa — e no ócio, depois da primeira pintura.
+ *
+ * A promessa é guardada: Acervo e MensagemPagina podem pedir no mesmo quadro
+ * sem virar duas requisições.
+ */
+let promessaIndice = null
+export function garantirIndice() {
+  promessaIndice ??= carregarIndice()
+  return promessaIndice
+}
+
+/**
+ * Depois de salvar no admin: o que está guardado pode ter ficado velho, então
+ * descarta os caches locais para a correção (FR-20) aparecer de imediato.
+ */
+export async function recarregarTudo() {
+  completas = new Map()
+  await limparCache()
+  // carregarIndice(true), e não garantirIndice(): `forcar` é o que descarta o
+  // cache local e revalida no servidor. Guardar a promessa aqui mantém a
+  // desduplicação coerente para quem pedir o índice logo em seguida.
+  promessaIndice = carregarIndice(true)
+  await Promise.allSettled([carregarDestaque(true), promessaIndice])
 }
 
 /**
@@ -338,7 +400,11 @@ export async function carregarMensagem(data) {
       return { estado: 'ok', mensagem }
     }
     // Sem rede e fora das recentes: se o índice conhece a data, ela existe —
-    // só não dá para baixar agora.
+    // só não dá para baixar agora. O índice não vem mais no boot, então aqui
+    // ele é esperado de propósito: sem ele buscarPorData devolveria null e a
+    // página diria "não encontrada" para uma Mensagem que existe. É o caminho
+    // lento (já falhou a rede), então o await não custa nada a ninguém.
+    await garantirIndice()
     return {
       estado: buscarPorData(data) ? 'indisponivel' : 'nao-encontrada',
       mensagem: null,
