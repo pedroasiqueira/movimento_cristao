@@ -37,6 +37,19 @@ import { ITENS } from '@/lib/navegacao'
  * O estado ativo não depende de cor: bloco preenchido (perceptível em escala
  * de cinza), peso da letra e aria-current, que o NavLink põe sozinho.
  *
+ * A BORDA É AZUL, E DE 2px, por norma e não por gosto. A barra é branca e
+ * passa por cima de duas superfícies: a folha de conteúdo, que também é
+ * branca, e o céu do rodapé (#f3f7fb). Com o fio de --borda que havia aqui,
+ * a fronteira ficava em 1,37:1 contra as duas — abaixo dos 3:1 que a WCAG
+ * 2.2 (SC 1.4.11) exige da borda que identifica um componente, ou seja,
+ * invisível para quem tem sensibilidade a contraste reduzida, que é
+ * exatamente o nosso público. Medido nos pixels em 19/08/2026: folha e
+ * barra davam 1,00:1, o mesmo branco.
+ * Tingir o FUNDO não resolveria: todos os tons claros da paleta ficam a
+ * poucos por cento uns dos outros, então o tom que separasse do branco se
+ * dissolveria no céu. Só a linha vence as duas superfícies de uma vez —
+ * --azul dá 8,31:1 contra ambas.
+ *
  * Sem env(safe-area-inset-bottom): o index.html não declara viewport-fit=cover,
  * então o viewport de layout do iOS já exclui a faixa do indicador de home e
  * o env() resolveria 0 — seria código morto. Acrescentar cover mudaria o
@@ -47,7 +60,7 @@ export default function BarraInferior() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="barra-inferior fixed inset-x-0 bottom-0 z-40 border-t border-borda bg-papel lg:hidden"
+      className="barra-inferior fixed inset-x-0 bottom-0 z-40 border-t-2 border-azul bg-papel lg:hidden"
     >
       <ul className="grid grid-cols-5">
         {ITENS.map(({ para, rotulo, icone: Icone, fim }) => (
