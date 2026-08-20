@@ -1,4 +1,4 @@
-import { apiGet } from './api'
+import { apiEnviar, apiGet } from './api'
 import {
   gravarDestaqueLocal,
   gravarNoCache,
@@ -356,6 +356,17 @@ export async function recarregarTudo() {
   // desduplicação coerente para quem pedir o índice logo em seguida.
   promessaIndice = carregarIndice(true)
   await Promise.allSettled([carregarDestaque(true), promessaIndice])
+}
+
+/**
+ * Exclusão definitiva (o endereço deixa de existir — ver a nota em
+ * mensagens.model.ts do backend). A recarga é a MESMA do salvamento: sem ela
+ * a mensagem apagada seguiria no índice, na home e nos caches locais até o
+ * próximo F5.
+ */
+export async function excluirMensagem(data, token) {
+  await apiEnviar('DELETE', `/mensagens/${data}`, undefined, token)
+  await recarregarTudo()
 }
 
 /**

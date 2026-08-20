@@ -156,11 +156,17 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/acervo" element={<Acervo />} />
-              <Route path="/mensagem/:data" element={<MensagemPagina admin={admin} />} />
+              <Route
+                path="/mensagem/:data"
+                element={<MensagemPagina admin={admin} token={tokenAdmin} />}
+              />
               <Route path="/musicas" element={<Musicas />} />
               {/* O segundo trecho é o título legível e é opcional: quem
                   resolve a música é o :id. Ver caminhoMusica em lib/musicas. */}
-              <Route path="/musica/:id/:slug?" element={<MusicaPagina admin={admin} />} />
+              <Route
+                path="/musica/:id/:slug?"
+                element={<MusicaPagina admin={admin} token={tokenAdmin} />}
+              />
               <Route path="/encontros" element={<Encontros />} />
               <Route
                 path="/admin"

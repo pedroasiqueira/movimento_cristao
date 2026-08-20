@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Pencil } from 'lucide-react'
 import Mensagem from '@/components/Mensagem'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
-import { garantirIndice, vizinhas, porNumero } from '@/lib/mensagens'
+import BotaoExcluir from '@/components/BotaoExcluir'
+import { excluirMensagem, garantirIndice, porExtenso, vizinhas, porNumero } from '@/lib/mensagens'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useMensagem } from '@/hooks/useMensagens'
 
@@ -20,8 +21,9 @@ import { useMensagem } from '@/hooks/useMensagens'
  * O texto inteiro só desce quando alguém abre esta página (memória → cache
  * local → API → reserva das recentes): a listagem do site circula sem corpo.
  */
-export default function MensagemPagina({ admin }) {
+export default function MensagemPagina({ admin, token }) {
   const { data } = useParams()
+  const navigate = useNavigate()
   const { carregando, mensagem, situacao } = useMensagem(data ?? '')
   useTitulo(mensagem?.titulo)
 
@@ -97,13 +99,24 @@ export default function MensagemPagina({ admin }) {
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-borda pt-6">
         <BotaoCompartilhar titulo={mensagem.titulo} caminho={`/mensagem/${mensagem.data}`} />
         {admin && (
-          <Link
-            to={`/admin/mensagem/editar/${mensagem.data}`}
-            className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
-          >
-            <Pencil size={18} aria-hidden />
-            Editar
-          </Link>
+          <>
+            <Link
+              to={`/admin/mensagem/editar/${mensagem.data}`}
+              className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
+            >
+              <Pencil size={18} aria-hidden />
+              Editar
+            </Link>
+            {/* `replace`: o endereço acabou de deixar de existir, e o botão
+                Voltar não pode trazer a pessoa de volta a uma página morta. */}
+            <BotaoExcluir
+              oQue="mensagem"
+              titulo={mensagem.titulo}
+              detalhe={porExtenso(mensagem.data)}
+              aoExcluir={() => excluirMensagem(mensagem.data, token)}
+              aoConcluir={() => navigate('/acervo', { replace: true })}
+            />
+          </>
         )}
         {mensagem.tags?.length > 0 && (
           <div className="flex flex-wrap gap-2">

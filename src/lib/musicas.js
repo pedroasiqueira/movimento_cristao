@@ -1,5 +1,5 @@
 import musicasLocais from '@/data/musicas.json'
-import { apiGet } from './api'
+import { apiEnviar, apiGet } from './api'
 import { notificar } from './store'
 
 /*
@@ -70,6 +70,23 @@ let promessaMusicas = null
 export function garantirMusicas() {
   promessaMusicas ??= carregarMusicas()
   return promessaMusicas
+}
+
+/**
+ * Exclusão definitiva (o endereço deixa de existir — ver a nota em
+ * musicas.model.ts do backend). Despublicar, que preserva o endereço, continua
+ * sendo o PATCH com `despublicada`.
+ *
+ * Tira da memória ANTES de recarregar de propósito: carregarMusicas() ignora
+ * lista vazia (a reserva empacotada vale mais que um banco fora do ar), e
+ * excluir a ÚLTIMA música deixaria justamente ela na tela.
+ */
+export async function excluirMusica(id, token) {
+  await apiEnviar('DELETE', `/musicas/${id}`, undefined, token)
+  todas = todas.filter((m) => m.id !== id)
+  repertorio = ordenar(todas.filter((m) => !m.despublicada))
+  notificar()
+  await carregarMusicas()
 }
 
 /** Semeia o repertório — o que o HTML pré-renderizado embute e o que o

@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Maximize2, Pencil, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
+import BotaoExcluir from '@/components/BotaoExcluir'
 import Letra from '@/components/Letra'
-import { buscarMusica, caminhoMusica, garantirMusicas, slugDoTitulo } from '@/lib/musicas'
+import {
+  buscarMusica,
+  caminhoMusica,
+  excluirMusica,
+  garantirMusicas,
+  slugDoTitulo,
+} from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
 
@@ -15,8 +22,9 @@ import { useDadosVivos } from '@/hooks/useMensagens'
  * Com o administrador identificado, a página oferece o atalho de edição —
  * a proteção real é a API exigir o token.
  */
-export default function MusicaPagina({ admin }) {
+export default function MusicaPagina({ admin, token }) {
   const { id, slug } = useParams()
+  const navigate = useNavigate()
   useDadosVivos() // re-render quando as músicas do banco chegarem
   // Antes do return antecipado de "não encontrada": um endereço de música
   // aberto direto precisa pedir o repertório, que não vem mais no boot.
@@ -95,13 +103,30 @@ export default function MusicaPagina({ admin }) {
         </Button>
         <BotaoCompartilhar titulo={musica.titulo} caminho={canonico} />
         {admin && (
-          <Link
-            to={`/admin/musica/editar/${musica.id}`}
-            className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
-          >
-            <Pencil size={18} aria-hidden />
-            Editar
-          </Link>
+          <>
+            <Link
+              to={`/admin/musica/editar/${musica.id}`}
+              className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
+            >
+              <Pencil size={18} aria-hidden />
+              Editar
+            </Link>
+            {/* Excluir NÃO é despublicar: aqui o endereço morre de vez, e é o
+                modal que avisa. Para tirar de circulação preservando o link
+                (FR-21), o caminho continua sendo a edição. `replace` porque o
+                Voltar não pode levar a uma página que deixou de existir. */}
+            <BotaoExcluir
+              oQue="música"
+              titulo={musica.titulo}
+              detalhe={
+                musica.autores?.length > 0
+                  ? musica.autores.join(', ')
+                  : 'Autoria desconhecida'
+              }
+              aoExcluir={() => excluirMusica(musica.id, token)}
+              aoConcluir={() => navigate('/musicas', { replace: true })}
+            />
+          </>
         )}
       </div>
 
