@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { filtrarMusicas, repertorio } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useDadosVivos } from '@/hooks/useMensagens'
 
 /**
  * Listagem de Músicas — FR-10: alcançável do menu em um toque, com busca por
@@ -12,7 +13,10 @@ import { useTitulo } from '@/hooks/useTitulo'
 export default function Musicas() {
   useTitulo('Músicas')
   const [consulta, setConsulta] = useState('')
-  const resultado = useMemo(() => filtrarMusicas(consulta), [consulta])
+  // Re-render quando as músicas do banco substituírem a reserva empacotada;
+  // sem memo — o repertório é pequeno e o filtro custa menos que rastreá-lo.
+  useDadosVivos()
+  const resultado = filtrarMusicas(consulta)
   const soExemplos = repertorio.every((m) => m.exemplo)
 
   return (

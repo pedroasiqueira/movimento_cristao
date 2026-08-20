@@ -5,18 +5,22 @@ import Mensagem from '@/components/Mensagem'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import AjusteLeitura from '@/components/AjusteLeitura'
 import { PASSOS, passoInicial } from '@/lib/leitura'
-import { buscarPorData, vizinhas, porNumero } from '@/lib/mensagens'
+import { vizinhas, porNumero } from '@/lib/mensagens'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useMensagem } from '@/hooks/useMensagens'
 
 /**
  * Página própria de cada Mensagem — FR-3: endereço estável /mensagem/AAAA-MM-DD,
  * a Mensagem inteira sem passar pela home. Anterior e seguinte — FR-5.
  * Ajuste local de leitura — FR-18. Com o administrador identificado, a página
  * oferece o atalho de edição (FR-20) — a proteção real é a API exigir o token.
+ *
+ * O texto inteiro só desce quando alguém abre esta página (memória → cache
+ * local → API → reserva das recentes): a listagem do site circula sem corpo.
  */
 export default function MensagemPagina({ admin }) {
   const { data } = useParams()
-  const mensagem = buscarPorData(data ?? '')
+  const { carregando, mensagem, situacao } = useMensagem(data ?? '')
   // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
   const [leitura, setLeitura] = useState(() => {
     const passo = passoInicial()
@@ -25,6 +29,40 @@ export default function MensagemPagina({ admin }) {
   useTitulo(mensagem?.titulo)
 
   if (!mensagem) {
+    if (carregando) {
+      return (
+        <div aria-hidden className="mx-auto min-h-[30rem] max-w-3xl animate-pulse pt-16">
+          <div className="h-8 w-3/4 rounded bg-papel-suave" />
+          <div className="mt-3 h-4 w-1/2 rounded bg-papel-suave" />
+          <div className="mt-8 space-y-3">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-4 rounded bg-papel-suave" />
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    if (situacao === 'indisponivel') {
+      return (
+        <div className="rounded-lg border border-borda px-6 py-10 text-center">
+          <h1 className="font-leitura text-2xl font-bold text-tinta">
+            Sem conexão para carregar a mensagem
+          </h1>
+          <p className="mt-2 text-tinta-suave">
+            A mensagem existe, mas não foi possível baixá-la agora. Verifique a
+            conexão e tente de novo.
+          </p>
+          <Link
+            to="/acervo"
+            className="mt-6 inline-flex min-h-12 items-center rounded-lg bg-azul px-5 font-medium text-white hover:bg-azul-escuro"
+          >
+            Ver o acervo completo
+          </Link>
+        </div>
+      )
+    }
+
     return (
       <div className="rounded-lg border border-borda px-6 py-10 text-center">
         <h1 className="font-leitura text-2xl font-bold text-tinta">

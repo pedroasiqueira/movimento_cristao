@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, CalendarDays, Music } from 'lucide-react'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import TextoFormatado from '@/components/TextoFormatado'
-import { acervo, destaqueDaHome, porExtenso } from '@/lib/mensagens'
+import { destaqueDaHome, estadoDestaque, porExtenso } from '@/lib/mensagens'
 import { multiplicadorInicial } from '@/lib/leitura'
 import { proximosEncontros } from '@/lib/encontros'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useDadosVivos } from '@/hooks/useMensagens'
 import sobre from '@/data/sobre.json'
 
 /**
@@ -15,27 +16,71 @@ import sobre from '@/data/sobre.json'
  * dos atalhos para Acervo e Músicas, e de uma apresentação curta do Movimento.
  * Contida de propósito: SM-C3 lembra que cada elemento a mais custa para o
  * público 60+.
+ *
+ * A página abre ANTES de o destaque chegar (main.jsx não espera a rede):
+ * enquanto isso, um esqueleto da mesma altura segura o lugar — nada salta
+ * quando o texto aparece, e em geral o localStorage já pintou a mensagem
+ * da visita anterior no primeiro quadro.
  */
 export default function Home() {
   useTitulo(null)
+  useDadosVivos()
   const { mensagem, situacao, diasAtras } = destaqueDaHome()
-
-  if (!mensagem) {
-    return <p className="text-tinta-suave">Ainda não há mensagens publicadas.</p>
-  }
 
   return (
     <>
       {/* A leitura mora numa coluna de medida confortável; os atalhos usam a largura toda. */}
       <div className="mx-auto max-w-3xl">
-        <Aviso situacao={situacao} data={mensagem.data} diasAtras={diasAtras} />
-        <PreviaDaMensagem mensagem={mensagem} />
+        {mensagem ? (
+          <>
+            <Aviso situacao={situacao} data={mensagem.data} diasAtras={diasAtras} />
+            <PreviaDaMensagem mensagem={mensagem} />
+          </>
+        ) : (
+          <SemDestaque situacao={situacao} />
+        )}
       </div>
       <ProximoEncontro />
       <Atalhos />
       <SobreResumo />
     </>
   )
+}
+
+/* Sem mensagem para destacar: carregando (esqueleto de altura estável),
+   indisponível (há acervo, mas nada baixável agora) ou vazio de verdade. */
+function SemDestaque({ situacao }) {
+  if (situacao === 'carregando') {
+    return (
+      <div aria-hidden className="min-h-[26rem] animate-pulse">
+        <div className="h-8 w-3/4 rounded bg-papel-suave" />
+        <div className="mt-3 h-4 w-1/2 rounded bg-papel-suave" />
+        <div className="mt-6 space-y-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-4 rounded bg-papel-suave" />
+          ))}
+        </div>
+        <div className="mt-6 h-12 w-64 rounded-lg bg-papel-suave" />
+      </div>
+    )
+  }
+
+  if (situacao === 'indisponivel') {
+    return (
+      <div className="rounded-lg border border-borda bg-papel-suave px-5 py-6">
+        <p className="text-tinta">Não foi possível carregar a mensagem do dia agora.</p>
+        <p className="mt-1 text-sm text-tinta-suave">
+          Verifique a conexão e recarregue a página — ou navegue pelo{' '}
+          <Link to="/acervo" className="font-medium text-azul underline underline-offset-2">
+            acervo completo
+          </Link>
+          .
+        </p>
+      </div>
+    )
+  }
+
+  return <p className="text-tinta-suave">Ainda não há mensagens publicadas.</p>
 }
 
 /*
@@ -160,6 +205,8 @@ function ProximoEncontro() {
 }
 
 function Atalhos() {
+  // O total vem junto do destaque (2 KB) — não é preciso esperar o índice.
+  const { total } = estadoDestaque()
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2">
       <Link
@@ -169,7 +216,8 @@ function Atalhos() {
         <BookOpen size={24} aria-hidden className="text-azul" />
         <p className="mt-2 font-semibold text-tinta">Acervo de mensagens</p>
         <p className="mt-1 text-sm text-tinta-suave">
-          {acervo.length} mensagens guardadas — encontre por data, palavra ou assunto.
+          {total > 0 ? `${total} mensagens guardadas` : 'Mensagens guardadas'} — encontre
+          por data, palavra ou assunto.
         </p>
       </Link>
 

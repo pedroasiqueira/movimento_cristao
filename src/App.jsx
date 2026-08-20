@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
@@ -10,10 +10,13 @@ import Musicas from '@/pages/Musicas'
 import MusicaPagina from '@/pages/MusicaPagina'
 import Encontros from '@/pages/Encontros'
 import Sobre from '@/pages/Sobre'
-import AdminEntrada from '@/pages/AdminEntrada'
-import AdminMensagemNova from '@/pages/AdminMensagemNova'
-import AdminMusicaNova from '@/pages/AdminMusicaNova'
 import { ITENS_ADMIN } from '@/lib/navegacao'
+
+// A Área Admin é de UMA pessoa; os visitantes não baixam essas telas
+// (~1.300 linhas) — os chunks só descem ao abrir /admin.
+const AdminEntrada = lazy(() => import('@/pages/AdminEntrada'))
+const AdminMensagemNova = lazy(() => import('@/pages/AdminMensagemNova'))
+const AdminMusicaNova = lazy(() => import('@/pages/AdminMusicaNova'))
 
 export default function App() {
   // A faixa do topo está fora de vista? Sinal único, medido no Cabecalho e
@@ -117,6 +120,7 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
               (menuRecolhido ? 'max-w-[88rem]' : 'max-w-5xl')
             }
           >
+            <Suspense fallback={<p className="text-tinta-suave">Carregando…</p>}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/acervo" element={<Acervo />} />
@@ -165,6 +169,7 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
               <Route path="/sobre" element={<Sobre />} />
               <Route path="*" element={<NaoEncontrada />} />
             </Routes>
+            </Suspense>
           </main>
         </div>
 

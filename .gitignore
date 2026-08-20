@@ -4,3 +4,6 @@ dist
 .env.local
 *.log
 .DS_Store
+
+# Reserva empacotada, gerada por scripts/gerar-reserva.mjs no build
+public/dados/

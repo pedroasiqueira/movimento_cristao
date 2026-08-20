@@ -8,6 +8,7 @@ import { PASSOS, passoInicial } from '@/lib/leitura'
 import Letra from '@/components/Letra'
 import { buscarMusica } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useDadosVivos } from '@/hooks/useMensagens'
 
 /**
  * Página de uma Música — FR-11 (versos e estrofes preservados, refrão
@@ -16,6 +17,7 @@ import { useTitulo } from '@/hooks/useTitulo'
  */
 export default function MusicaPagina() {
   const { id } = useParams()
+  useDadosVivos() // re-render quando as músicas do banco chegarem
   const musica = buscarMusica(id ?? '')
   const [modoCanto, setModoCanto] = useState(false)
   // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
