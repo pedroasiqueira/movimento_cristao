@@ -1,0 +1,12 @@
+# Copiado literal de public/ para dist/ pelo Vite, como o _headers ao lado.
+#
+# Existe por causa do link "Área Admin" no rodapé (App.jsx): antes dele nada
+# no site apontava para /admin, e a tela de login ficava fora dos buscadores
+# por acidente. Agora ficará por escolha. O link também leva rel="nofollow";
+# esta é a segunda tranca da mesma porta, e custa três linhas.
+#
+# ISTO NÃO É SEGURANÇA — é higiene de indexação. Um robots.txt é público e
+# lido por qualquer um. A proteção real é da API, que exige JWT válido com
+# papel de admin em toda escrita (JwtAuthGuard + RolesGuard).
+User-agent: *
+Disallow: /admin

@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, House, Info, Music } from 'lucide-react'
+import { BookOpen, CalendarDays, House, Info, Lock, Music } from 'lucide-react'
 
 /*
   Menu raso: cinco itens, sem submenus — PRD §6.
@@ -36,3 +36,15 @@ export const ITENS_ADMIN = [
   { para: '/admin/mensagem/nova', rotulo: 'Adicionar mensagem do dia' },
   { para: '/admin/musica/nova', rotulo: 'Adicionar música' },
 ]
+
+/*
+  Porta da Área Admin — o link discreto no rodapé (App.jsx), único caminho
+  clicável até /admin. Fica FORA de ITENS de propósito: não é seção do menu
+  raso (PRD §6) e não pode encostar na grade de cinco colunas da
+  BarraInferior, cujas medidas estão calibradas para 20vw exatos.
+
+  Aqui o `icone` é usado — ao contrário de ITENS_ADMIN, que aparece em lista
+  de texto. No rodapé o cadeado é o que faz o link ser reconhecido de
+  relance por quem o procura, sem precisar aumentar nem destacar o texto.
+*/
+export const ENTRADA_ADMIN = { para: '/admin', rotulo: 'Área Admin', icone: Lock }

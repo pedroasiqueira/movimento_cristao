@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Link, NavLink, Navigate, useLocation } from 'react-router-dom'
 import Cabecalho from '@/components/Cabecalho'
 import MenuLateral from '@/components/MenuLateral'
 import BarraInferior from '@/components/BarraInferior'
@@ -12,7 +12,7 @@ import Musicas from '@/pages/Musicas'
 import MusicaPagina from '@/pages/MusicaPagina'
 import Encontros from '@/pages/Encontros'
 import Sobre from '@/pages/Sobre'
-import { ITENS_ADMIN } from '@/lib/navegacao'
+import { ENTRADA_ADMIN, ITENS_ADMIN } from '@/lib/navegacao'
 
 // A Área Admin é de UMA pessoa; os visitantes não baixam essas telas
 // (~1.300 linhas) — os chunks só descem ao abrir /admin.
@@ -237,6 +237,43 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
             <p className="text-sm text-tinta-suave">
               Arca da Sagrada Aliança – Movimento Cristão · Natal/RN, Brasil
             </p>
+
+            {/* Porta da Área Admin (pedido do Pedro, 20/08/2026). Até aqui o
+                único caminho era digitar /admin, e o token dura sete dias —
+                ou seja, o publicador tinha de lembrar e digitar uma rota toda
+                semana. O rodapé é o único lugar do site comum às duas
+                larguras que fica fora da primeira tela: uma regra só para
+                decorar ("vai até o fim da página"), zero custo para quem só
+                veio ler, e nada encostando no menu raso (§6) nem na grade de
+                cinco colunas da BarraInferior.
+
+                Por último de propósito, depois do caminho de contato (FR-19),
+                que continua sendo o que o rodapé oferece primeiro.
+
+                DISCRETO POR COR E POSIÇÃO, NUNCA POR TAMANHO: o alvo fica nos
+                48px de §7 (ver a declaração canônica em index.css) — a
+                isenção (b) de lá vale para as telas internas do admin, e esta
+                é página pública. E quem mais precisa deste link é justamente
+                quem tem a mão menos firme.
+
+                O -ml-3 cancela o px-3 e devolve o texto ao mesmo prumo da
+                linha de assinatura acima; sem ele o link nasce 12px torto.
+
+                Não some depois do login: um link que desaparece é mais uma
+                regra para decorar, e logado ele abre o hub da Área Admin. */}
+            <NavLink
+              to={ENTRADA_ADMIN.para}
+              rel="nofollow"
+              className={({ isActive }) =>
+                '-ml-3 inline-flex min-h-12 items-center gap-2 rounded-lg px-3 text-sm transition-colors ' +
+                (isActive
+                  ? 'bg-azul-claro text-azul-escuro'
+                  : 'text-tinta-suave hover:bg-azul-claro hover:text-azul-escuro')
+              }
+            >
+              <ENTRADA_ADMIN.icone size={18} aria-hidden />
+              {ENTRADA_ADMIN.rotulo}
+            </NavLink>
           </div>
         </footer>
       </div>

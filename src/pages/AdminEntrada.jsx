@@ -11,6 +11,13 @@ import { useTitulo } from '@/hooks/useTitulo'
  * (decisão do Pedro, 17/08/2026; mesmo espírito dos links de Encontro, PRD
  * §4.3: acesso distribuído em privado). O login é validado pela API
  * (POST /auth/login → JWT de 7 dias), que é quem protege as escritas.
+ *
+ * Emenda de 20/08/2026: continua fora dos MENUS, mas deixou de exigir que se
+ * digite a rota. Há agora um link discreto no fim do rodapé (App.jsx), igual
+ * nas duas larguras — o token dura sete dias, e obrigar o publicador a
+ * lembrar um endereço toda semana era custo sem contrapartida. O que a
+ * decisão original protegia (não ocupar espaço de quem só veio ler) segue
+ * protegido: o rodapé é o fim da página, não a primeira tela.
  */
 export default function AdminEntrada({ admin, aoEntrar, aoSair }) {
   useTitulo('Área Admin')
