@@ -12,7 +12,10 @@ export default function Letra({ secoes, className = '', ampliada = false, style 
             key={i}
             className={`my-6 border-l-4 border-azul bg-azul-claro py-3 pr-4 pl-5 ${ampliada ? '' : 'rounded-r-lg'}`}
           >
-            <p className="mb-1 text-xs font-semibold tracking-wide text-azul uppercase">
+            {/* rotulo-refrao, e não uma utilitária de tamanho: o rótulo mede
+                em `em` para acompanhar a letra ao lado da qual ele está, que
+                muda de tamanho nos três usos deste componente. */}
+            <p className="rotulo-refrao mb-1 font-semibold tracking-wide text-azul uppercase">
               Refrão
             </p>
             {s.linhas.map((l, j) => (

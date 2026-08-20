@@ -14,7 +14,6 @@ import {
   tagsEmUso,
 } from '@/lib/mensagens'
 import { interpretarMensagem } from '@/lib/interpretarMensagem'
-import { multiplicadorInicial } from '@/lib/leitura'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useMensagem } from '@/hooks/useMensagens'
 
@@ -767,7 +766,7 @@ function Formulario({ token, original }) {
               Prévia
             </p>
             {temPrevia ? (
-              <div className="mt-3" style={{ fontSize: `${multiplicadorInicial()}em` }}>
+              <div className="mt-3">
                 <Mensagem
                   comoTitulo="h2"
                   mensagem={{

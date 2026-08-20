@@ -7,7 +7,7 @@ export default function Mensagem({ mensagem, comoTitulo: Titulo = 'h1' }) {
   return (
     <article>
       <header className="mb-6">
-        <Titulo className="text-balance font-leitura text-2xl leading-tight font-bold text-tinta sm:text-3xl">
+        <Titulo className="titulo-leitura text-balance font-leitura font-bold text-tinta">
           {titulo}
         </Titulo>
         <p className="mt-2 text-sm text-tinta-suave">

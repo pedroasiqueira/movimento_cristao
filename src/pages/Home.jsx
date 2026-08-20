@@ -3,7 +3,6 @@ import { ArrowRight, BookOpen, CalendarDays, Music } from 'lucide-react'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import TextoFormatado from '@/components/TextoFormatado'
 import { destaqueDaHome, estadoDestaque, porExtenso } from '@/lib/mensagens'
-import { multiplicadorInicial } from '@/lib/leitura'
 import { proximosEncontros } from '@/lib/encontros'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
@@ -148,7 +147,7 @@ function PreviaDaMensagem({ mensagem }) {
   return (
     <article>
       <header className="mb-5">
-        <h1 className="text-balance font-leitura text-2xl leading-tight font-bold text-tinta sm:text-3xl">
+        <h1 className="titulo-leitura text-balance font-leitura font-bold text-tinta">
           {titulo}
         </h1>
         <p className="mt-2 text-sm text-tinta-suave">
@@ -158,12 +157,8 @@ function PreviaDaMensagem({ mensagem }) {
       </header>
 
       {/* ~40% do texto, esvanecendo — a leitura inteira mora na página própria (FR-3). */}
-      {/* O multiplicador fica num pai: inline no mesmo elemento substituiria
-          o 1.06em da classe em vez de compor (mesmo padrão das páginas). */}
-      <div style={{ fontSize: `${multiplicadorInicial()}em` }}>
-        <div className="previa-fade texto-mensagem">
-          <TextoFormatado texto={previa(corpo)} />
-        </div>
+      <div className="previa-fade texto-mensagem">
+        <TextoFormatado texto={previa(corpo)} />
       </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -238,10 +233,13 @@ function Atalhos() {
 function SobreResumo() {
   return (
     <div className="mt-10 border-t border-borda pt-8">
+      {/* Etiqueta de seção, e não título de leitura: fica no ritmo lento da
+          interface, como a gêmea que encabeça o Contato no Sobre. Nos degraus
+          altos ela fica menor que o parágrafo abaixo — mas ela não lê como
+          título, lê como etiqueta, e crescê-la daria um salto de 45% no
+          primeiro degrau. */}
       <h2 className="text-lg font-semibold text-azul-escuro">O Movimento</h2>
-      <div className="mt-3" style={{ fontSize: `${multiplicadorInicial()}em` }}>
-        <p className="texto-mensagem">{sobre.paragrafos[0]}</p>
-      </div>
+      <p className="texto-mensagem mt-3">{sobre.paragrafos[0]}</p>
       <Link
         to="/sobre"
         className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-lg border-2 border-azul px-5 font-medium text-azul hover:bg-azul hover:text-white"

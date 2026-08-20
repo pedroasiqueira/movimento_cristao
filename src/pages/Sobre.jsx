@@ -1,7 +1,6 @@
 import Contato from '@/components/Contato'
 import { useTitulo } from '@/hooks/useTitulo'
 import sobre from '@/data/sobre.json'
-import { multiplicadorInicial } from '@/lib/leitura'
 
 /**
  * Sobre — FR-16. O conteúdo vive em src/data/sobre.json, não no código da
@@ -18,7 +17,7 @@ export default function Sobre() {
 
   return (
     <>
-      <h1 className="font-leitura text-3xl font-bold text-tinta">Sobre o Movimento</h1>
+      <h1 className="titulo-leitura font-leitura font-bold text-tinta">Sobre o Movimento</h1>
 
       {sobre.provisorio && (
         <div className="mt-4 rounded-lg border border-dashed border-borda bg-papel-suave px-4 py-3 text-sm text-tinta-suave">
@@ -26,12 +25,10 @@ export default function Sobre() {
         </div>
       )}
 
-      <div className="mt-6 max-w-3xl" style={{ fontSize: `${multiplicadorInicial()}em` }}>
-        <div className="texto-mensagem space-y-4">
-          {sobre.paragrafos.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
+      <div className="texto-mensagem mt-6 max-w-3xl space-y-4">
+        {sobre.paragrafos.map((p, i) => (
+          <p key={i}>{p}</p>
+        ))}
       </div>
 
       <div className="mt-10">

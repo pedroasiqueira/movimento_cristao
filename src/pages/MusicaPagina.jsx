@@ -3,8 +3,6 @@ import { Link, useParams } from 'react-router-dom'
 import { Maximize2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
-import AjusteLeitura from '@/components/AjusteLeitura'
-import { PASSOS, passoInicial } from '@/lib/leitura'
 import Letra from '@/components/Letra'
 import { buscarMusica } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
@@ -20,11 +18,6 @@ export default function MusicaPagina() {
   useDadosVivos() // re-render quando as músicas do banco chegarem
   const musica = buscarMusica(id ?? '')
   const [modoCanto, setModoCanto] = useState(false)
-  // A leitura abre ampliada (FR-18); no modo compacto, no tamanho normal.
-  const [leitura, setLeitura] = useState(() => {
-    const passo = passoInicial()
-    return { passo, mult: PASSOS[passo] }
-  })
   useTitulo(musica?.titulo)
 
   if (!musica) {
@@ -68,7 +61,7 @@ export default function MusicaPagina() {
         </div>
       )}
 
-      <h1 className="font-leitura text-3xl font-bold text-tinta">{musica.titulo}</h1>
+      <h1 className="titulo-leitura font-leitura font-bold text-tinta">{musica.titulo}</h1>
       <p className="mt-2 text-tinta-suave">
         {musica.autores?.length > 0 ? musica.autores.join(', ') : 'Autoria desconhecida'}
       </p>
@@ -82,14 +75,7 @@ export default function MusicaPagina() {
         <BotaoCompartilhar titulo={musica.titulo} caminho={`/musica/${musica.id}`} />
       </div>
 
-      {/* Ajuste local de leitura — FR-18 vale também para Música. */}
-      <AjusteLeitura
-        passo={leitura.passo}
-        aoMudar={(passo, mult) => setLeitura({ passo, mult })}
-      />
-      <div style={{ fontSize: `${leitura.mult}em` }}>
-        <Letra secoes={musica.secoes} className="texto-mensagem mt-4" />
-      </div>
+      <Letra secoes={musica.secoes} className="texto-mensagem mt-4" />
 
       {modoCanto && <ModoCanto musica={musica} aoSair={() => setModoCanto(false)} />}
     </>
@@ -98,9 +84,12 @@ export default function MusicaPagina() {
 
 /**
  * Modo de canto — FR-12, realiza UJ-5 (Dona Célia, de pé, luz fraca, uma mão).
- * Corpo em 2.25rem (36px na base padrão) — FR-12 exige ≥2rem; 36px é o
- * tamanho validado no UJ-5 e mantém o modo sempre MAIOR que a leitura no
- * passo máximo (senão "Melhorar visualização" encolheria o texto).
+ * Corpo em max(2.25rem, 1,35× o corpo de leitura): o piso é o físico validado
+ * no UJ-5 (36px na base padrão) e atende o ≥2rem que o FR-12 exige; o outro
+ * termo é o que faz o modo continuar valendo a pena depois que a escada da
+ * leitura passou a chegar aos 48,8px. Com os 2.25rem fixos de antes, no último
+ * degrau "Melhorar visualização" aumentaria o texto em 6% — viraria um botão
+ * que só tira coisas da tela. Agora o ganho nunca fica abaixo de 35%.
  * Rolável com o polegar, sair em um toque.
  * Onde o navegador suportar, a tela não apaga (Wake Lock, readquirido ao
  * voltar de outra aplicação); onde não suportar, o modo continua funcionando
@@ -170,13 +159,16 @@ function ModoCanto({ musica, aoSair }) {
         </p>
       )}
 
-      {/* FR-12 (≥2rem): 2.25rem, o físico validado — em rem: acompanha a
-          escala global e ignora o modo compacto (canto não deve encolher). */}
+      {/* O piso em rem acompanha a escala da interface e ignora o modo
+          compacto — canto não deve encolher, e no compacto o max() cai no
+          piso justamente por isso. 36 / 40,5 / 48,9 / 65,8px nos quatro
+          degraus. Inline, e não numa classe, para a nota do FR-12 ficar
+          colada ao número. */}
       <Letra
         secoes={musica.secoes}
         ampliada
         className="texto-mensagem mx-auto max-w-2xl px-5 pt-2 pb-24"
-        style={{ fontSize: '2.25rem' }}
+        style={{ fontSize: 'max(2.25rem, calc(var(--tamanho-leitura, 1.26rem) * 1.35))' }}
       />
     </div>
   )
