@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
-import { filtrarMusicas, garantirMusicas, repertorio } from '@/lib/musicas'
+import { caminhoMusica, filtrarMusicas, garantirMusicas, repertorio } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
 
@@ -67,7 +67,7 @@ export default function Musicas() {
           {resultado.map((m) => (
             <Link
               key={m.id}
-              to={`/musica/${m.id}`}
+              to={caminhoMusica(m)}
               className="block rounded-lg border border-borda px-4 py-4 hover:border-azul hover:bg-azul-claro"
             >
               <h2 className="font-leitura text-lg font-bold text-tinta">{m.titulo}</h2>

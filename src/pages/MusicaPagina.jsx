@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { Maximize2, X } from 'lucide-react'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { Maximize2, Pencil, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import BotaoCompartilhar from '@/components/BotaoCompartilhar'
 import Letra from '@/components/Letra'
-import { buscarMusica, garantirMusicas } from '@/lib/musicas'
+import { buscarMusica, caminhoMusica, garantirMusicas, slugDoTitulo } from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
 import { useDadosVivos } from '@/hooks/useMensagens'
 
@@ -12,9 +12,11 @@ import { useDadosVivos } from '@/hooks/useMensagens'
  * Página de uma Música — FR-11 (versos e estrofes preservados, refrão
  * distinguível), FR-13 (autoria; desconhecida é dita, não escondida),
  * FR-14 (endereço próprio) e FR-12 (modo de visualização ampliada).
+ * Com o administrador identificado, a página oferece o atalho de edição —
+ * a proteção real é a API exigir o token.
  */
-export default function MusicaPagina() {
-  const { id } = useParams()
+export default function MusicaPagina({ admin }) {
+  const { id, slug } = useParams()
   useDadosVivos() // re-render quando as músicas do banco chegarem
   // Antes do return antecipado de "não encontrada": um endereço de música
   // aberto direto precisa pedir o repertório, que não vem mais no boot.
@@ -58,6 +60,20 @@ export default function MusicaPagina() {
     )
   }
 
+  // O trecho legível do endereço é enfeite — só o :id resolve. Quando ele não
+  // bate com o título de hoje (a música foi renomeada, ou alguém digitou outra
+  // coisa na barra), a página abre a música certa e arruma o endereço. `replace`
+  // de propósito: não cria entrada no histórico, então o botão Voltar não fica
+  // preso num pingue-pongue entre o endereço torto e o certo.
+  // `slug ?? ''` porque a rota declara o trecho legível como opcional: sem ele
+  // o parâmetro vem indefinido, e um título sem letras não gera trecho nenhum —
+  // os dois lados precisam encontrar-se no vazio, ou o redirecionamento se
+  // repetiria para sempre.
+  const canonico = caminhoMusica(musica)
+  if ((slug ?? '') !== slugDoTitulo(musica.titulo)) {
+    return <Navigate replace to={canonico} />
+  }
+
   return (
     <>
       {musica.exemplo && (
@@ -77,7 +93,16 @@ export default function MusicaPagina() {
           <Maximize2 aria-hidden />
           Melhorar visualização
         </Button>
-        <BotaoCompartilhar titulo={musica.titulo} caminho={`/musica/${musica.id}`} />
+        <BotaoCompartilhar titulo={musica.titulo} caminho={canonico} />
+        {admin && (
+          <Link
+            to={`/admin/musica/editar/${musica.id}`}
+            className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-borda px-5 font-medium text-tinta hover:border-azul hover:bg-azul-claro"
+          >
+            <Pencil size={18} aria-hidden />
+            Editar
+          </Link>
+        )}
       </div>
 
       <Letra secoes={musica.secoes} className="texto-mensagem mt-4" />

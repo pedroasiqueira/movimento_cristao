@@ -34,7 +34,7 @@ if (SITE && !TEM_IMAGEM) {
   console.warn('[prerender] public/og.png não existe — cards compartilhados sairão sem imagem.')
 }
 
-const { renderizar, semear, semearMusicas } = await import(
+const { renderizar, semear, semearMusicas, caminhoMusica } = await import(
   resolve(distSsr, 'entry-server.js')
 )
 
@@ -99,7 +99,7 @@ if (!mensagens || mensagens.length < corpus.length * 0.9) {
 const musicasApi = fonte === 'api' ? await buscar('/musicas?incluir=despublicadas') : null
 const musicas = Array.isArray(musicasApi)
   ? musicasApi.map((m) => ({
-      id: m.slug,
+      id: m.codigo,
       titulo: m.titulo,
       autores: m.autores ?? [],
       secoes: m.secoes ?? [],
@@ -249,15 +249,16 @@ gerar(
 musicas
   .filter((m) => !m.despublicada)
   .forEach((m) => {
+    const caminho = caminhoMusica(m)
     gerar(
-      `/musica/${m.id}`,
+      caminho,
       {
         titulo: `${m.titulo} · ${BASE}`,
         cartao: m.titulo,
         descricao: m.autores?.length
           ? `${m.titulo} — ${m.autores.join(', ')}. Letra completa.`
           : `${m.titulo}. Letra completa.`,
-        caminho: `/musica/${m.id}`,
+        caminho,
       },
       { mensagens: { total }, musicas: [m] },
     )

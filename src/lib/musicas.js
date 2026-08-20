@@ -5,8 +5,9 @@ import { notificar } from './store'
 /*
  * As Músicas nascem dos JSONs empacotados (reserva) e são trocadas pelo banco
  * em carregarMusicas(), chamada sob demanda por garantirMusicas(). Schema:
- * id (slug do endereço), titulo, autores (lista, possivelmente vazia — FR-13),
- * secoes com tipo 'estrofe' | 'refrao' e linhas (versos preservados — FR-11).
+ * id (o código sorteado do endereço), titulo, autores (lista, possivelmente
+ * vazia — FR-13), secoes com tipo 'estrofe' | 'refrao' e linhas (versos
+ * preservados — FR-11).
  */
 
 const ordenar = (lista) =>
@@ -24,9 +25,11 @@ let todas = musicasLocais
  */
 export let repertorio = ordenar(todas.filter((m) => !m.despublicada))
 
-/** Documento da API → forma que as páginas usam (o slug do banco é o id daqui). */
+/** Documento da API → forma que as páginas usam (o `codigo` do banco é o id
+ *  daqui; o nome muda na fronteira porque `id` colide com uma virtual do
+ *  Mongoose do lado do servidor). */
 const daApi = (m) => ({
-  id: m.slug,
+  id: m.codigo,
   titulo: m.titulo,
   autores: m.autores ?? [],
   secoes: m.secoes ?? [],
@@ -88,14 +91,32 @@ function normalizar(t) {
 }
 
 /**
- * Gera o id (endereço /musica/<id>) de uma nova Música a partir do título —
- * FR-14. Mesma normalização da busca: minúsculas, sem acento; o que não é
- * letra ou número vira hífen.
+ * O trecho LEGÍVEL do endereço, a partir do título. Mesma normalização da
+ * busca: minúsculas, sem acento; o que não é letra ou número vira hífen.
+ *
+ * Até 20/08/2026 isto gerava o id — o endereço era o slug do título, e
+ * corrigir o título condenava a música a um endereço que mentia para sempre.
+ * Agora quem resolve é o código sorteado pelo servidor; este trecho é enfeite,
+ * para quem recebe o link no WhatsApp saber o que vai abrir. Trocá-lo à mão na
+ * barra de endereço não muda a música que aparece (ver MusicaPagina).
  */
-export function gerarIdMusica(titulo) {
+export function slugDoTitulo(titulo) {
   return normalizar(titulo.trim())
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * O endereço de uma Música — FR-14. Único lugar que sabe a forma do caminho;
+ * a listagem, a página, a tela do admin e a pré-renderização passam por aqui.
+ *
+ * Título sem letra nem número ("♪♪♪") não deixa trecho legível nenhum, e o
+ * caminho sai só com o código: um segmento vazio no fim daria caminho com
+ * barra dupla na pré-renderização e faria a página se redirecionar em laço.
+ */
+export const caminhoMusica = (m) => {
+  const legivel = slugDoTitulo(m.titulo)
+  return legivel ? `/musica/${m.id}/${legivel}` : `/musica/${m.id}`
 }
 
 /** Filtra por título ou trecho da letra — FR-10. */

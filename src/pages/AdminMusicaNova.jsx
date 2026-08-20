@@ -1,33 +1,93 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Letra from '@/components/Letra'
 import { apiEnviar } from '@/lib/api'
-import { buscarMusica, carregarMusicas, gerarIdMusica } from '@/lib/musicas'
+import {
+  buscarMusica,
+  caminhoMusica,
+  carregarMusicas,
+  garantirMusicas,
+} from '@/lib/musicas'
 import { useTitulo } from '@/hooks/useTitulo'
+import { useDadosVivos } from '@/hooks/useMensagens'
 
 /**
- * Cadastro de Música — Área Admin.
+ * Cadastro e edição de Música — Área Admin.
  * "Salvar" publica de verdade: POST /musicas na API com o token do login,
  * e recarrega o repertório em memória para a música aparecer no site na
  * hora. O formulário só pede o que o schema tem: título, autores (FR-13) e
  * a letra em seções estrofe/refrão com um verso por linha (FR-11, FR-14).
+ * A mesma tela, aberta em /admin/musica/editar/:id, corrige uma música já
+ * publicada sem criar registro novo nem mudar o endereço.
  */
 
 let SEQ = 0
 const novaSecao = (tipo) => ({ chave: ++SEQ, tipo, texto: '' })
 
+/** Seções do banco → o formato de edição (um verso por linha num textarea). */
+const secoesParaTexto = (secoes) =>
+  secoes.map((s) => ({ chave: ++SEQ, tipo: s.tipo, texto: s.linhas.join('\n') }))
+
 export default function AdminMusicaNova({ token }) {
-  useTitulo('Adicionar música')
-  const [titulo, setTitulo] = useState('')
-  const [autores, setAutores] = useState('')
-  const [secoes, setSecoes] = useState(() => [novaSecao('estrofe')])
+  // A rota de edição cai neste MESMO formulário: a música abre preenchida e o
+  // envio vira PATCH em vez de POST.
+  const { id: idEdicao } = useParams()
+  useDadosVivos()
+
+  // O repertório inteiro desce de uma vez, e não uma música por vez como as
+  // mensagens (que têm useMensagem, com `carregando` próprio). Sem este sinal
+  // a tela piscaria "não encontrada" no intervalo entre montar e a lista
+  // chegar — a reserva empacotada responde por buscarMusica enquanto isso.
+  const [pronto, setPronto] = useState(false)
+  useEffect(() => {
+    garantirMusicas().then(() => setPronto(true))
+  }, [])
+
+  const original = idEdicao ? buscarMusica(idEdicao) : null
+
+  if (idEdicao && !original && !pronto) {
+    return <p className="text-tinta-suave">Carregando a música…</p>
+  }
+
+  if (idEdicao && !original) {
+    return (
+      <>
+        <Link
+          to="/admin"
+          className="inline-flex min-h-12 items-center gap-1.5 text-azul underline underline-offset-2 hover:text-azul-escuro"
+        >
+          <ArrowLeft size={18} aria-hidden />
+          Área Admin
+        </Link>
+        <h1 className="mt-2 font-leitura text-3xl font-bold text-tinta">
+          Música não encontrada
+        </h1>
+        <p className="mt-2 text-tinta-suave">
+          Não há música nesse endereço para editar.
+        </p>
+      </>
+    )
+  }
+
+  // key: trocar de música (ou sair da edição para o cadastro) recomeça limpo.
+  return <Formulario key={original?.id ?? 'nova'} token={token} original={original} />
+}
+
+/** Um formulário, dois usos: cadastro (original nulo) e edição (preenchido). */
+function Formulario({ token, original }) {
+  const edicao = Boolean(original)
+  useTitulo(edicao ? `Editar música — ${original.titulo}` : 'Adicionar música')
+  const [titulo, setTitulo] = useState(original?.titulo ?? '')
+  const [autores, setAutores] = useState(original ? original.autores.join(', ') : '')
+  const [secoes, setSecoes] = useState(() =>
+    original ? secoesParaTexto(original.secoes) : [novaSecao('estrofe')],
+  )
   const [erros, setErros] = useState({})
   const [salvando, setSalvando] = useState(false)
   const [salva, setSalva] = useState(null)
 
-  const id = gerarIdMusica(titulo)
   const listaAutores = autores.split(',').map((a) => a.trim()).filter(Boolean)
   // Versos aparados, linhas vazias fora, seções sem conteúdo descartadas —
   // é o objeto final; a prévia usa o mesmo, então o que se vê é o que sai.
@@ -44,25 +104,27 @@ export default function AdminMusicaNova({ token }) {
 
   async function salvar(e) {
     e.preventDefault()
+    // Sem checagem de endereço duplicado: o código é sorteado no servidor, e
+    // desde que ele deixou de nascer do título duas músicas homônimas convivem.
     const encontrados = {}
     if (!titulo.trim()) encontrados.titulo = 'A música precisa de um título.'
-    else if (buscarMusica(id)) encontrados.id = 'Já existe uma música nesse endereço. Mude o título.'
     if (secoesLimpas.length === 0) encontrados.letra = 'Escreva ao menos um verso da letra.'
     setErros(encontrados)
     if (Object.keys(encontrados).length > 0) return
 
     setSalvando(true)
     try {
-      const criada = await apiEnviar(
-        'POST',
-        '/musicas',
-        { titulo: titulo.trim(), autores: listaAutores, secoes: secoesLimpas },
-        token,
-      )
-      // O repertório em memória é recarregado do banco: a música nova já
-      // aparece na listagem e na busca sem recarregar a página.
+      const corpo = { titulo: titulo.trim(), autores: listaAutores, secoes: secoesLimpas }
+      // Corrigir é PATCH no mesmo endereço — nada de registro novo. O título
+      // vai junto: ele não define mais o endereço, então mudá-lo é seguro.
+      const gravada = edicao
+        ? await apiEnviar('PATCH', `/musicas/${original.id}`, corpo, token)
+        : await apiEnviar('POST', '/musicas', corpo, token)
+      // O repertório em memória é recarregado do banco: a música nova (ou
+      // corrigida) já aparece na listagem, na busca e na página dela sem
+      // recarregar — quem mostra assina a store via useDadosVivos.
       await carregarMusicas()
-      setSalva({ slug: criada.slug, titulo: criada.titulo })
+      setSalva({ id: gravada.codigo, titulo: gravada.titulo, edicao })
       window.scrollTo(0, 0)
     } catch (falha) {
       setErros({
@@ -86,6 +148,7 @@ export default function AdminMusicaNova({ token }) {
 
   if (salva) return <Sucesso musica={salva} aoRecomecar={recomecar} />
 
+
   return (
     <>
       <Link
@@ -96,9 +159,13 @@ export default function AdminMusicaNova({ token }) {
         Área Admin
       </Link>
 
-      <h1 className="mt-2 font-leitura text-3xl font-bold text-tinta">Adicionar música</h1>
+      <h1 className="mt-2 font-leitura text-3xl font-bold text-tinta">
+        {edicao ? `Editar música — ${original.titulo}` : 'Adicionar música'}
+      </h1>
       <p className="mt-2 text-tinta-suave">
-        Preencha e acompanhe na prévia como a página da música vai ficar.
+        {edicao
+          ? 'Ajuste o que precisar e acompanhe na prévia como a página vai ficar.'
+          : 'Preencha e acompanhe na prévia como a página da música vai ficar.'}
       </p>
 
       <form onSubmit={salvar} noValidate className="mt-6 grid gap-8 lg:grid-cols-2">
@@ -117,15 +184,20 @@ export default function AdminMusicaNova({ token }) {
             {erros.titulo && (
               <p className="mt-1.5 text-sm font-medium text-destructive">{erros.titulo}</p>
             )}
-            {/* FR-14: o endereço nasce do título e não muda depois. */}
-            {id && (
-              <p className="mt-1.5 text-sm text-tinta-suave">
-                Endereço: <span className="font-medium text-tinta">/musica/{id}</span>
-              </p>
-            )}
-            {erros.id && (
-              <p className="mt-1.5 text-sm font-medium text-destructive">{erros.id}</p>
-            )}
+            {/* FR-14: o endereço é o código sorteado no servidor, não o
+                título — por isso corrigir o nome da música aqui não move a
+                música de lugar nem quebra link já compartilhado. */}
+            <p className="mt-1.5 text-sm text-tinta-suave">
+              {edicao ? (
+                <>
+                  Endereço:{' '}
+                  <span className="font-medium text-tinta">{caminhoMusica(original)}</span> —
+                  permanente; mudar o título não o altera.
+                </>
+              ) : (
+                'O endereço é gerado ao salvar e não muda se o título mudar depois.'
+              )}
+            </p>
           </div>
 
           <div>
@@ -227,7 +299,7 @@ export default function AdminMusicaNova({ token }) {
           )}
 
           <Button type="submit" disabled={salvando} className="min-h-12 px-6">
-            {salvando ? 'Salvando…' : 'Salvar música'}
+            {salvando ? 'Salvando…' : edicao ? 'Salvar alterações' : 'Salvar música'}
           </Button>
         </div>
 
@@ -259,23 +331,29 @@ function Sucesso({ musica, aoRecomecar }) {
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center gap-3">
         <Check size={24} aria-hidden className="shrink-0 text-azul" />
-        <h1 className="font-leitura text-3xl font-bold text-tinta">Música publicada</h1>
+        <h1 className="font-leitura text-3xl font-bold text-tinta">
+          {musica.edicao ? 'Música atualizada' : 'Música publicada'}
+        </h1>
       </div>
       <p className="mt-3 text-tinta-suave">
-        <strong className="font-semibold text-tinta">{musica.titulo}</strong> já está no
-        site — na listagem, na busca e no endereço próprio dela.
+        <strong className="font-semibold text-tinta">{musica.titulo}</strong>{' '}
+        {musica.edicao
+          ? 'já está no site com as alterações.'
+          : 'já está no site — na listagem, na busca e no endereço próprio dela.'}
       </p>
 
       <div className="mt-5 flex flex-wrap gap-3">
         <Link
-          to={`/musica/${musica.slug}`}
+          to={caminhoMusica(musica)}
           className="inline-flex min-h-12 items-center rounded-lg bg-azul px-5 font-medium text-white hover:bg-azul-escuro"
         >
           Ver a página da música
         </Link>
-        <Button variant="outline" className="min-h-12 px-5" onClick={aoRecomecar}>
-          Cadastrar outra
-        </Button>
+        {!musica.edicao && (
+          <Button variant="outline" className="min-h-12 px-5" onClick={aoRecomecar}>
+            Cadastrar outra
+          </Button>
+        )}
       </div>
 
       <Link

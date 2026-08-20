@@ -23,3 +23,8 @@ export function renderizar(caminho) {
 // HTML, sem o que a hidratação divergiria.
 export { semear } from './lib/mensagens'
 export { semearMusicas } from './lib/musicas'
+
+// A pré-renderização precisa gerar UM arquivo por endereço de música; que a
+// forma do caminho venha daqui, e não de uma cópia no script, é o que impede
+// o HTML estático de sair num endereço que o site não usa.
+export { caminhoMusica } from './lib/musicas'

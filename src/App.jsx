@@ -116,7 +116,8 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
   const { pathname } = useLocation()
   const telaDeCadastro =
     ITENS_ADMIN.some((item) => item.para === pathname) ||
-    pathname.startsWith('/admin/mensagem/editar/')
+    pathname.startsWith('/admin/mensagem/editar/') ||
+    pathname.startsWith('/admin/musica/editar/')
   const [menuReaberto, setMenuReaberto] = useState(false)
   useEffect(() => setMenuReaberto(false), [pathname])
   const menuRecolhido = telaDeCadastro && !menuReaberto
@@ -157,7 +158,9 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
               <Route path="/acervo" element={<Acervo />} />
               <Route path="/mensagem/:data" element={<MensagemPagina admin={admin} />} />
               <Route path="/musicas" element={<Musicas />} />
-              <Route path="/musica/:id" element={<MusicaPagina />} />
+              {/* O segundo trecho é o título legível e é opcional: quem
+                  resolve a música é o :id. Ver caminhoMusica em lib/musicas. */}
+              <Route path="/musica/:id/:slug?" element={<MusicaPagina admin={admin} />} />
               <Route path="/encontros" element={<Encontros />} />
               <Route
                 path="/admin"
@@ -189,6 +192,17 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
               />
               <Route
                 path="/admin/musica/nova"
+                element={
+                  admin ? (
+                    <AdminMusicaNova token={tokenAdmin} />
+                  ) : (
+                    <Navigate to="/admin" replace />
+                  )
+                }
+              />
+              {/* Edição de música — o mesmo formulário, preenchido. */}
+              <Route
+                path="/admin/musica/editar/:id"
                 element={
                   admin ? (
                     <AdminMusicaNova token={tokenAdmin} />
