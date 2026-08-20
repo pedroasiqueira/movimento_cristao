@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import CartaoMensagem from '@/components/CartaoMensagem'
+import FiltroMes from '@/components/FiltroMes'
 import { acervo, acervoPorMes, estadoAcervo, tagsEmUso } from '@/lib/mensagens'
 import { buscarMensagens } from '@/lib/busca'
 import { useTitulo } from '@/hooks/useTitulo'
@@ -16,15 +17,20 @@ import { useDadosVivos } from '@/hooks/useMensagens'
  * A tela trabalha sobre o ÍNDICE leve (data/título/tags); a busca por
  * conteúdo acontece na API e, sem rede, cai para título+tags com aviso.
  * Nada de centenas de cartões de uma vez: a vista inicial mostra os meses
- * recentes e os botões de mês — que antes eram âncoras — passaram a FILTRAR,
+ * recentes e escolher um mês FILTRA (os botões de mês já foram âncoras),
  * mantendo o DOM pequeno em qualquer celular (era o custo escondido de
- * renderizar as 900+ de uma vez).
+ * renderizar as 900+ de uma vez). A escolha do mês mora em FiltroMes,
+ * recolhida atrás de um botão: a fileira com um botão por mês do acervo
+ * crescia 12 por ano e já empurrava a primeira Mensagem para fora da tela.
  *
  * A busca e as Tags ficam recolhidas atrás de "Buscar mensagens" — pedido do
  * Pedro após usar a tela: abertas, empurravam a primeira Mensagem para além
  * de uma tela inteira de rolagem. Quem chega por um link com ?tag= encontra
  * o painel já aberto, com o filtro à vista. Fechar o painel limpa busca e
  * filtro: fechar significa voltar à lista completa, sem filtro escondido.
+ *
+ * Tag e mês viajam na URL (?tag=, ?mes=): recarregar, voltar e compartilhar
+ * o link preservam o que a pessoa escolheu.
  */
 
 /** A vista inicial fecha o mês em que esta contagem é atingida. */
@@ -35,9 +41,9 @@ export default function Acervo() {
   useDadosVivos()
   const [parametros, setParametros] = useSearchParams()
   const tagAtiva = parametros.get('tag')
+  const mesAtivo = parametros.get('mes')
   const [consulta, setConsulta] = useState('')
   const [buscaAberta, setBuscaAberta] = useState(() => Boolean(tagAtiva))
-  const [mesAtivo, setMesAtivo] = useState(null)
   // Sem memo: a tela re-renderiza quando o índice chega (useDadosVivos) e
   // estes cálculos custam ~1 ms sobre o índice leve — memoizar contra um
   // binding externo só confundiria o rastreio de dependências.
@@ -53,11 +59,38 @@ export default function Acervo() {
   const filtrando = buscando || Boolean(tagAtiva)
   const resultado = useBusca(consulta, tagAtiva)
 
-  const grupos = filtrando ? null : acervoPorMes(acervo)
+  // Busca e Tag mandam na lista, e a vista por mês nem é renderizada junto:
+  // um mês escolhido não fica pendurado invisível na URL. Cobre os três
+  // caminhos de uma vez — digitar, clicar numa Tag e chegar por link.
+  useEffect(() => {
+    if (filtrando && mesAtivo) definirMes(null)
+  }, [filtrando, mesAtivo]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function definirTag(tag) {
-    setParametros(tag ? { tag } : {}, { replace: true })
+  const grupos = filtrando ? null : acervoPorMes(acervo)
+  // ?mes= de um mês que não existe (link antigo, endereço digitado à mão)
+  // vale como sem mês. Enquanto o índice não chega, grupos está vazio e o
+  // valor da URL espera aí — é o que faz um link compartilhado sobreviver
+  // ao carregamento em vez de ser descartado antes de haver o que conferir.
+  const mesValido = grupos?.some((g) => g.chave === mesAtivo) ? mesAtivo : null
+
+  /* Mexe só nas chaves informadas: a Tag e o mês convivem na mesma URL, e a
+     forma antiga — setParametros({ tag }) — apagava tudo o que não fosse ela. */
+  function definirParametros(mudancas) {
+    setParametros(
+      (atuais) => {
+        const proximos = new URLSearchParams(atuais)
+        for (const [chave, valor] of Object.entries(mudancas)) {
+          if (valor) proximos.set(chave, valor)
+          else proximos.delete(chave)
+        }
+        return proximos
+      },
+      { replace: true },
+    )
   }
+
+  const definirTag = (tag) => definirParametros({ tag })
+  const definirMes = (mes) => definirParametros({ mes })
 
   function fecharBusca() {
     setConsulta('')
@@ -88,10 +121,19 @@ export default function Acervo() {
             Buscar mensagens
           </Button>
         )}
-        {!buscaAberta && (
-          <span className="text-sm text-tinta-suave">
-            {carregando ? 'Carregando o acervo…' : `${acervo.length} mensagens no acervo`}
-          </span>
+        {/* Escolher o mês fica ao lado da busca, na mesma linha: eram duas
+            faixas de controle antes da primeira Mensagem, e o pedido do Pedro
+            foi juntá-las. Filtrando por texto ou Tag, grupos é null e o
+            controle de mês não existe — a lista ali é por relevância. */}
+        {grupos && (
+          <FiltroMes grupos={grupos} mesAtivo={mesValido} aoEscolherMes={definirMes} />
+        )}
+
+        {/* A contagem saiu (pedido do Pedro): ela repete o que a lista mostra
+            e roubava a linha dos controles. O aviso de carregamento fica —
+            é o único sinal enquanto o índice não chega. */}
+        {!buscaAberta && carregando && (
+          <span className="text-sm text-tinta-suave">Carregando o acervo…</span>
         )}
       </div>
 
@@ -172,7 +214,7 @@ export default function Acervo() {
         </div>
       ) : (
         grupos && (
-          <ListaPorMes grupos={grupos} mesAtivo={mesAtivo} aoEscolherMes={setMesAtivo} />
+          <ListaPorMes grupos={grupos} mesAtivo={mesValido} aoEscolherMes={definirMes} />
         )
       )}
     </>
@@ -213,9 +255,14 @@ function useBusca(consulta, tagAtiva) {
 }
 
 /**
- * A navegação por data — FR-5. Os botões de mês filtram: a vista inicial
- * traz os meses mais recentes (até ~30 cartões) e cada mês abre sozinho,
- * no lugar da rolagem única com o acervo inteiro.
+ * A navegação por data — FR-5. Escolher um mês filtra: a vista inicial traz
+ * os meses mais recentes (até ~30 cartões) e cada mês abre sozinho, no lugar
+ * da rolagem única com o acervo inteiro.
+ *
+ * O controle aparece nas DUAS pontas da lista. Quem chega querendo um mês
+ * antigo o encontra no topo; quem leu as recentes até o fim encontra o mesmo
+ * controle ali, sem ter de rolar a página inteira de volta — era o que o
+ * aviso "escolha um mês logo acima" pedia que a pessoa fizesse.
  */
 function ListaPorMes({ grupos, mesAtivo, aoEscolherMes }) {
   const visiveis = useMemo(() => {
@@ -232,28 +279,26 @@ function ListaPorMes({ grupos, mesAtivo, aoEscolherMes }) {
   }, [grupos, mesAtivo])
 
   const haMaisMeses = visiveis.length < grupos.length
+  const rotuloAtivo = grupos.find((g) => g.chave === mesAtivo)?.rotulo
+
+  // Escolheu um mês: o foco vai para o título dele. Leva a rolagem junto —
+  // inclusive quando a escolha veio do controle do rodapé, senão a pessoa
+  // ficaria parada no fim da página — e anuncia o novo contexto a quem usa
+  // leitor de tela. Só na mudança: ao montar, ninguém escolheu nada ainda.
+  const montou = useRef(false)
+  useEffect(() => {
+    if (montou.current && mesAtivo) document.getElementById(`titulo-${mesAtivo}`)?.focus()
+    montou.current = true
+  }, [mesAtivo])
 
   return (
     <>
-      <nav aria-label="Escolher um mês" className="mt-5 flex flex-wrap gap-2">
-        {grupos.map((g) => (
-          <Button
-            key={g.chave}
-            variant={g.chave === mesAtivo ? 'default' : 'secondary'}
-            className="min-h-12 px-4"
-            onClick={() => aoEscolherMes(g.chave === mesAtivo ? null : g.chave)}
-            aria-pressed={g.chave === mesAtivo}
-          >
-            {g.rotulo}
-          </Button>
-        ))}
-      </nav>
-
       {visiveis.map((g) => (
         <section key={g.chave} aria-labelledby={`titulo-${g.chave}`} className="mt-8">
           <h2
             id={`titulo-${g.chave}`}
-            className="border-b border-borda pb-2 text-lg font-semibold text-azul-escuro"
+            tabIndex={-1}
+            className="scroll-mt-24 border-b border-borda pb-2 text-lg font-semibold text-azul-escuro"
           >
             {g.rotulo}
           </h2>
@@ -265,11 +310,24 @@ function ListaPorMes({ grupos, mesAtivo, aoEscolherMes }) {
         </section>
       ))}
 
-      {!mesAtivo && haMaisMeses && (
-        <p className="mt-8 rounded-lg bg-papel-suave px-5 py-4 text-sm text-tinta-suave">
-          Estas são as mensagens mais recentes. Para ver as anteriores, escolha
-          um mês logo acima.
-        </p>
+      {grupos.length > 1 && (
+        <div className="mt-8 rounded-lg bg-papel-suave px-5 py-4">
+          {mesAtivo ? (
+            <p className="mb-3 text-sm text-tinta-suave">
+              Fim das mensagens de {rotuloAtivo}.
+            </p>
+          ) : (
+            haMaisMeses && (
+              <p className="mb-3 text-sm text-tinta-suave">
+                Estas são as mensagens mais recentes. Para ver as anteriores,
+                escolha um mês:
+              </p>
+            )
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <FiltroMes grupos={grupos} mesAtivo={mesAtivo} aoEscolherMes={aoEscolherMes} />
+          </div>
+        </div>
       )}
     </>
   )
