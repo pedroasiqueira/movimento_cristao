@@ -141,10 +141,11 @@ export default function MusicaPagina({ admin, token }) {
  * Modo de canto — FR-12, realiza UJ-5 (Dona Célia, de pé, luz fraca, uma mão).
  * Corpo em max(2.25rem, 1,35× o corpo de leitura): o piso é o físico validado
  * no UJ-5 (36px na base padrão) e atende o ≥2rem que o FR-12 exige; o outro
- * termo é o que faz o modo continuar valendo a pena depois que a escada da
- * leitura passou a chegar aos 48,8px. Com os 2.25rem fixos de antes, no último
- * degrau "Melhorar visualização" aumentaria o texto em 6% — viraria um botão
- * que só tira coisas da tela. Agora o ganho nunca fica abaixo de 35%.
+ * termo é o que faz o modo continuar valendo a pena no topo da escada de
+ * leitura, que desde 20/08/2026 termina em 40px. Enquanto ela chegava a
+ * 48,8px, os 2.25rem fixos de antes rendiam no último degrau um aumento de
+ * 6% — um botão que só tirava coisas da tela; hoje renderiam 29%. Com o
+ * segundo termo o ganho nunca fica abaixo de 35%.
  * Rolável com o polegar, sair em um toque.
  * Onde o navegador suportar, a tela não apaga (Wake Lock, readquirido ao
  * voltar de outra aplicação); onde não suportar, o modo continua funcionando

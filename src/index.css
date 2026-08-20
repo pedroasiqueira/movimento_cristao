@@ -152,7 +152,7 @@ html[data-escala="3"] { font-size: 23px; --tamanho-leitura: 1.74rem; }  /* 40,0p
   O corpo de leitura, esse, o compacto desloca — mas só o COMEÇO da escada,
   nunca o fim. Quem pediu interface densa abre no tamanho convencional
   (17px em vez de 20,2px, herdando o que o antigo passoInicial() fazia) e
-  continua alcançando os mesmos 48,8px no último degrau. Um teto menor seria
+  continua alcançando os mesmos 40px no último degrau. Um teto menor seria
   invisível: o contador diria "4 de 4" para os dois usuários e eles veriam
   tamanhos diferentes.
 
@@ -265,8 +265,9 @@ body::before {
   (text-2xl no celular, sm:text-3xl acima), então quem nunca toca no controle
   não vê diferença nenhuma; e o teto faz o título parar de crescer quando o
   corpo o alcança. Com uma razão fixa de 30%, o título mais longo do acervo
-  (69 caracteres em caixa alta) media 756px no último degrau — mais de uma
-  tela inteira antes da mensagem começar. Empatado com o corpo são 588px, e a
+  (69 caracteres em caixa alta) media 756px no último degrau de então, que
+  era 48,8px — mais de uma tela inteira antes da mensagem começar. Empatado
+  com o corpo eram 588px, e com o degrau atual de 40px são ~482px; a
   hierarquia passa a vir do serif, do negrito e do line-height apertado.
 */
 .titulo-leitura {
@@ -290,7 +291,7 @@ body::before {
   rem, porque a Letra aparece em três tamanhos diferentes — página, modo de
   canto e prévia do admin — e o rótulo tem que acompanhar o texto ao lado do
   qual ele está. Em rem, no último degrau, virava um 17px perdido dentro de
-  uma letra de 48,8px, com cara de erro de renderização.
+  uma letra de 40px, com cara de erro de renderização.
 */
 .texto-mensagem .rotulo-refrao {
   font-size: 0.6em;
