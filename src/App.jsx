@@ -127,11 +127,18 @@ function Estrutura({ cabecalhoFora, admin, tokenAdmin, entrarAdmin, sairAdmin })
       />
 
       <div className="min-w-0 flex-1">
-        <div className="px-3 sm:px-6 lg:px-0">
+        {/* Os recuos laterais são os únicos do site em px, e não em rem: eles
+            travam no que medem hoje no primeiro degrau. Em rem cresciam junto
+            com a letra e roubavam largura justamente quando o texto mais
+            precisa — medido, comiam 18% de um celular de 320px no degrau 1 e
+            26% no degrau 4, e a coluna de leitura encolhia 24px bem no nível
+            em que cada caractere conta. Mesmo princípio da escada acima e do
+            teto da pílula: a moldura não cresce às custas da leitura. */}
+        <div className="px-[12px] sm:px-[24px] lg:px-0">
           <main
             id="conteudo"
             className={
-              'mx-auto my-6 w-full rounded-2xl border border-borda bg-papel px-4 py-8 shadow-sm transition-[max-width] duration-300 ease-out sm:px-8 lg:mt-0 ' +
+              'mx-auto my-6 w-full rounded-2xl border border-borda bg-papel px-[16px] py-8 shadow-sm transition-[max-width] duration-300 ease-out sm:px-[32px] lg:mt-0 ' +
               (menuRecolhido ? 'max-w-[88rem]' : 'max-w-5xl')
             }
           >

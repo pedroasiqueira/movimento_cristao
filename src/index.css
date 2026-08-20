@@ -96,14 +96,32 @@
   ritmos diferentes.
 
   A raiz (interface: menus, botões, datas, molduras) cresce devagar, 44% de
-  ponta a ponta. O corpo de leitura cresce rápido, 142%. É por isso que a
+  ponta a ponta. O corpo de leitura cresce rápido, 98%. É por isso que a
   segunda coluna não é derivável da primeira: são razões escolhidas
-  (1,26/1,5/1,81/2,12), não uma conta.
+  (1,26/1,41/1,6/1,74), não uma conta.
 
-  O motivo de a interface andar devagar é medido: para o corpo alcançar 48,8px
-  só pela raiz, ela precisaria ir a 46px — e o cabeçalho sozinho passaria a
-  medir 1024px numa tela de 844px. A pessoa abriria o site e não veria a
+  O motivo de a interface andar devagar é medido: para o corpo alcançar 40px
+  só pela raiz, ela precisaria ir a 38px — e o cabeçalho sozinho passaria a
+  ocupar mais de uma tela de celular. A pessoa abriria o site e não veria a
   mensagem.
+
+  POR QUE O ÚLTIMO DEGRAU PARA EM 40px (revisto em 20/08/2026). Ele já esteve
+  em 48,8px, e era exagero — medindo as quebras reais do navegador, um celular
+  de 390px dava 10 caracteres por linha e um de 320px dava SETE, ou seja quase
+  uma palavra por linha, com 6 palavras na tela inteira. A referência de
+  tipografia é 45-75 caracteres por linha no desktop e 30-50 no celular;
+  abaixo de ~30 o olho passa a saltar de palavra em palavra e o leitor perde
+  a linha. Aumentar a letra passava a atrapalhar quem ela deveria ajudar.
+
+  Os 40px vêm de duas contas que batem no mesmo lugar. Primeira: a WCAG 1.4.4
+  pede que o texto possa ir a 200% sem quebrar, e 200% da base de leitura
+  (20,2px) são 40px — ou seja, o último degrau é exatamente o alvo da norma,
+  e não um número escolhido no olho. Segunda: 40px é o joelho da curva medida
+  — de 48,8 para 40 ganham-se 4 caracteres por linha, de 40 para 32 ganha-se
+  só mais 1. Descer mais custaria alcance sem comprar legibilidade.
+
+  Quem achar este degrau tímido: o problema não é o tamanho da fonte, é a
+  largura do celular. Meça caracteres por linha antes de subir o número.
 
   O tamanho base vive no <html> em px para que os rem de todo o site se
   ajustem juntos. Base convencional de 16px — decisão do Pedro (18/08/2026):
@@ -118,9 +136,9 @@ html {
   -webkit-text-size-adjust: 100%;
   --tamanho-leitura: 1.26rem;                                  /* 20,2px */
 }
-html[data-escala="1"] { font-size: 18px; --tamanho-leitura: 1.5rem; }   /* 27,0px */
-html[data-escala="2"] { font-size: 20px; --tamanho-leitura: 1.81rem; }  /* 36,2px */
-html[data-escala="3"] { font-size: 23px; --tamanho-leitura: 2.12rem; }  /* 48,8px */
+html[data-escala="1"] { font-size: 18px; --tamanho-leitura: 1.41rem; }  /* 25,4px */
+html[data-escala="2"] { font-size: 20px; --tamanho-leitura: 1.6rem; }   /* 32,0px */
+html[data-escala="3"] { font-size: 23px; --tamanho-leitura: 1.74rem; }  /* 40,0px */
 
 /*
   Modo compacto (opt-in) — Pedro, 18/08/2026. O padrão do site segue
@@ -161,8 +179,8 @@ html[data-escala="3"] { font-size: 23px; --tamanho-leitura: 2.12rem; }  /* 48,8p
 */
 html[data-compacto] { --spacing: 0.21875rem; --tamanho-leitura: 1.06rem; }  /* 17,0px */
 html[data-compacto][data-escala="1"] { --tamanho-leitura: 1.26rem; }       /* 22,7px */
-html[data-compacto][data-escala="2"] { --tamanho-leitura: 1.6rem; }        /* 32,0px */
-html[data-compacto][data-escala="3"] { --tamanho-leitura: 2.12rem; }       /* 48,8px */
+html[data-compacto][data-escala="2"] { --tamanho-leitura: 1.41rem; }       /* 28,2px */
+html[data-compacto][data-escala="3"] { --tamanho-leitura: 1.74rem; }       /* 40,0px */
 
 body {
   font-family: var(--font-interface);
